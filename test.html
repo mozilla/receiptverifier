@@ -1,0 +1,37 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="http://ianb.github.com/doctestjs/doctest.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://ianb.github.com/doctestjs/doctest.css">
+    <script src="helpers.js"></script>
+    <title>OWAValidator tests</title>
+  </head>
+  <body class="autodoctest">
+
+    <h1>OWAValidator tests</h1>
+
+    <div class="test">
+
+      <pre class="doctest">
+
+$ doctest.defaultTimeout = 20000;
+$ v = new OWAVerifier({requestTimeout: 19000});
+$ v.clearCache();
+$ r = navigator.mozApps.getSelf();
+> r.onsuccess = Spy('onsuccess', {wait: true});
+> r.onerror = Spy('onerror');
+Spy('onerror')
+[object DOMRequest].onsuccess([object Event])
+$ writeln(r.result.receipts.length);
+?
+$ writeln(r.result.receipts);
+[...]
+$ v.verify(Spy('verify', {wait: true}));
+verify([OWAVerifier error status: no error installed app: http...])x
+$ writeln(v.products);
+
+
+</pre>
+      </div>
+
+    </body></html>
