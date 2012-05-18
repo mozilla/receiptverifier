@@ -6,7 +6,7 @@ var OWAVerifier = function (options) {
   this.app = undefined;
   this.products = [];
   this.receiptErrors = {};
-  this.receiptVerifications = {};
+  this.receiptValidations = {};
   this.cacheStorage = options.cacheStorage || localStorage;
   this.cacheCheckInterval = options.cacheCheckInterval || (1000 * 60 * 60 * 24);
   this.error = this.errors.VERIFICATION_INCOMPLETE('.verify() has not been called');
@@ -61,16 +61,16 @@ OWAVerifier.prototype = {
     SERVER_ERROR: OWAVerifier.Error("SERVER_ERROR", {NETWORK_ERROR: true}),
     RECEIPT_PARSE_ERROR: OWAVerifier.Error("RECEIPT_PARSE_ERROR", {RECEIPT_SYNTAX: true}),
     STORE_PARSE_ERROR: OWAVerifier.Error("STORE_PARSE_ERROR", {NETWORK_ERROR: true}),
-    STORE_INVALID: OWAVerifier.Error("STORE_INVALID", {NETWORK_ERROR: true}),
-    REFUNDED: OWAVerifier.Error("REFUNDED"),
-    RECEIPT_INVALID: OWAVerifier.Error("RECEIPT_INVALID"),
+    STORE_INVALID: OWAVerifier.Error("STORE_INVALID"),
+    REFUNDED: OWAVerifier.Error("REFUNDED", {REFUNDED: true}),
+    RECEIPT_INVALID: OWAVerifier.Error("RECEIPT_INVALID", {RECEIPT_SYNTAX: true}),
     REQUEST_TIMEOUT: OWAVerifier.Error("REQUEST_TIMEOUT", {NETWORK_ERROR: true})
   },
 
   toString: function () {
     var s = '[OWAVerifier error status: ' + (this.error || 'no error');
     if (this.products.length) {
-      s += ' products: ' + this.products.join(',');
+      s += ' products: ' + this.products.map(function (i) {return i.url;}).join(', ');
     }
     if (this.app) {
       s += ' installed app: ' + this.app.manifestURL;
@@ -131,47 +131,39 @@ OWAVerifier.prototype = {
   },
 
   verifyOneReceipt: function (app, receipt, installsAllowedFrom, callback) {
-    console.log('first');
     try {
       var parsed = this.parseReceipt(receipt);
     } catch (e) {
       // While bad, this is non-fatal
-      console.log('yikes', e, receipt);
       this._addReceiptError(receipt, this.errors.RECEIPT_PARSE_ERROR("Error decoding JSON: " + e, {exception: e}));
       callback();
       return;
     }
-    console.log('second');
     if (typeof installsAllowedFrom == "string") {
       // A calling error, but we'll gloss over it:
       installsAllowedFrom = [installsAllowedFrom];
     }
-    console.log('trying it out', parsed);
     var iss = parsed.iss;
     if (! iss) {
       this._addReceiptError(receipt, this.errors.RECEIPT_INVALID("No (or empty) iss field"), {parsed: parsed});
       callback();
       return;
     }
-    console.log('everything is cool');
     // FIXME: somewhat crude checking, case-sensitive:
     if (installsAllowedFrom && installsAllowedFrom.indexOf(iss) == -1 && installsAllowedFrom.indexOf("*") == -1) {
       this._addReceiptError(receipt, this.errors.INVALID_INSTALLS_ALLOWED_FROM("Installer of receipt is not a valid installer: " + iss));
       callback();
       return;
     }
-    console.log('almost');
     var verify = parsed.verify;
     if (! verify) {
       this._addReceiptError(receipt, this.errors.RECEIPT_INVALID("No (or empty) verify field"), {parsed: parsed});
       callback();
       return;
     }
-    console.log('practically', parsed);
     var req = new XMLHttpRequest();
     var self = this;
     req.open("POST", verify);
-    console.log('sending request', req, this.requestTimeout);
     req.onreadystatechange = function () {
       if (req.readyState != 4) {
         return;
@@ -180,7 +172,6 @@ OWAVerifier.prototype = {
         clearTimeout(timeout);
         timeout = null;
       }
-      console.log('request finished', req);
       if (req.status === 0) {
         self._addReceiptError(receipt, self.errors.NETWORK_ERROR("Server could not be contacted", {request: req}));
         callback();
@@ -203,14 +194,13 @@ OWAVerifier.prototype = {
         callback();
         return;
       }
-      console.log('result', result);
       if (result.status == "ok" || result.status == "pending") {
-        self._addReceiptValidation(result);
+        self._addReceiptValidation(receipt, result);
         callback();
         return;
       }
       if (result.status == "refunded") {
-        self._addReceiptError(self.errors.REFUNDED("Application payment was refunded", {result: result}));
+        self._addReceiptError(receipt, self.errors.REFUNDED("Application payment was refunded", {result: result}));
         callback();
         return;
       }
@@ -233,7 +223,6 @@ OWAVerifier.prototype = {
     var timeout;
     if (this.requestTimeout) {
       timeout = setTimeout(function () {
-        console.log('timing out request', req, req.readyState);
         //req.abort();
         self._addReceiptError(
           receipt,
@@ -243,8 +232,6 @@ OWAVerifier.prototype = {
         );
       }, this.requestTimeout);
     }
-    xreq = req;
-    console.log('sent request', req.readyState);
   },
 
   _addReceiptError: function (receipt, error) {
@@ -257,13 +244,13 @@ OWAVerifier.prototype = {
       // The error was a syntactically invalid receipt, not indicative of anything wrong per se
       null;
     } else {
-      this.error = this.errors.RECEIPT_ERROR;
+      this.error = error;
     }
   },
 
   _addReceiptValidation: function (receipt, result) {
     this.receiptValidations[receipt] = result;
-    this.products.push(result.product);
+    this.products.push(this.parseReceipt(receipt).product);
   },
 
   checkCache: function (receipt) {
