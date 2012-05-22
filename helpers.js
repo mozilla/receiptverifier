@@ -79,16 +79,30 @@ OWAVerifier.states.MozAppsError = OWAVerifier.State("MozAppsError", OWAVerifier.
 OWAVerifier.states.VerifierError = OWAVerifier.State("VerifierError", OWAVerifier.states.InternalError);
 OWAVerifier.states.ServerError = OWAVerifier.State("ServerError", OWAVerifier.states.NetworkError);
 
+OWAVerifier.states.toString = function () {
+  var items = [];
+  for (var i in this) {
+    if (this.hasOwnProperty(i) && i != 'toString' && i != 'detail') {
+      items.push(i);
+    }
+  }
+  items.sort();
+  return '{' + items.join(', ') + '}';
+};
+
 OWAVerifier.errors = {};
 OWAVerifier.errors.ReceiptFormatError = OWAVerifier.State("ReceiptFormatError");
 OWAVerifier.errors.ReceiptParseError = OWAVerifier.State("ReceiptParseError", OWAVerifier.errors.ReceiptFormatError);
-OWAVerifier.errors.InvalidFromStoreError = OWAVerifier.State("InvalidFromStoreError");
-OWAVerifier.errors.RefundedError = OWAVerifier.State("RefundedError");
-OWAVerifier.errors.RequestTimeoutError = OWAVerifier.State("RequestTimeoutError", OWAVerifier.states.ServerError);
+OWAVerifier.errors.InvalidFromStore = OWAVerifier.State("InvalidFromStore");
+OWAVerifier.errors.Refunded = OWAVerifier.State("Refunded");
+OWAVerifier.errors.RequestTimeout = OWAVerifier.State("RequestTimeout", OWAVerifier.states.ServerError);
 OWAVerifier.errors.ServerStatusError = OWAVerifier.State("ServerStatusError", OWAVerifier.states.ServerError);
+OWAVerifier.errors.InvalidServerResponse = OWAVerifier.State("InvalidServerResponse", OWAVerifier.states.ServerError);
 OWAVerifier.errors.InvalidReceiptIssuer = OWAVerifier.State("InvalidReceiptIssuer");
 OWAVerifier.errors.ConnectionError = OWAVerifier.State("ConnectionError", OWAVerifier.states.NetworkError);
-OWAVerifier.errors.ReceiptExpiredError = OWAVerifier.State("ReceiptExpiredError");
+OWAVerifier.errors.ReceiptExpired = OWAVerifier.State("ReceiptExpired");
+
+OWAVerifier.errors.toString = OWAVerifier.states.toString;
 
 OWAVerifier.prototype = {
 
@@ -268,7 +282,7 @@ OWAVerifier.prototype = {
       try {
         var result = JSON.parse(req.responseText);
       } catch (e) {
-        self._addReceiptError(receipt, self.errors.SERVER_ERROR("Invalid JSON from server", {request: req, text: req.responseText}));
+        self._addReceiptError(receipt, new self.errors.InvalidServerResponse("Invalid JSON from server", {request: req, text: req.responseText}));
         callback();
         return;
       }
@@ -283,23 +297,23 @@ OWAVerifier.prototype = {
         return;
       }
       if (result.status == "refunded") {
-        self._addReceiptError(receipt, new self.errors.RefundedError("Application payment was refunded", {result: result}));
+        self._addReceiptError(receipt, new self.errors.Refunded("Application payment was refunded", {result: result}));
         callback();
         return;
       }
       if (result.status == "expired") {
-        self._addReceiptError(receipt, new self.errors.ReceiptExpiredError("Receipt expired", {result: result}));
+        self._addReceiptError(receipt, new self.errors.ReceiptExpired("Receipt expired", {result: result}));
         // FIXME: sometimes an error, sometimes not?  Accumulate separately?
         self._addReceiptVerification(receipt, result);
         callback();
         return;
       }
       if (result.status == "invalid") {
-        self._addReceiptError(receipt, new self.errors.InvalidFromStoreError("The store reports the receipt is invalid", {result: result}));
+        self._addReceiptError(receipt, new self.errors.InvalidFromStore("The store reports the receipt is invalid", {result: result}));
         callback();
         return;
       }
-      self._addReceiptError(receipt, new self.states.ServerError("Store replied with unknown status: " + result.status, {result: result}));
+      self._addReceiptError(receipt, new self.errors.InvalidServerResponse("Store replied with unknown status: " + result.status, {result: result}));
       callback();
     };
     req.send(receipt);
@@ -309,7 +323,7 @@ OWAVerifier.prototype = {
         self.log(self.levels.ERROR, "Request to " + verify + " timed out");
         self._addReceiptError(
           receipt,
-          new self.errors.RequestTimeoutError(
+          new self.errors.RequestTimeout(
             "The request timed out after " + this.requestTimeout + " milliseconds",
             {request: req, url: verify})
         );
