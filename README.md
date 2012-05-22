@@ -64,49 +64,49 @@ function logToServer(app, data) {
 
 The `verifier.state` object can be an instance of one of these items; each is a property of `OWAVerifier.states`:
 
-**`OK`**: everything went okay!
+**OK**: everything went okay!
 
-**`NoValidReceipts`**: the application is installed, and has receipts, but none of the receipts are valid.  The receipts may be syntactically invalid, may be part of a store that's not expected, may be rejected by the store as invalid, or may be refunded.  Look to `verifier.receiptErrors` for details.
+**NoValidReceipts**: the application is installed, and has receipts, but none of the receipts are valid.  The receipts may be syntactically invalid, may be part of a store that's not expected, may be rejected by the store as invalid, or may be refunded.  Look to `verifier.receiptErrors` for details.
 
-**`NetworkError`**: some network error occurred that kept validation from completing.  That is, a receipt seemed okay but we weren't able to contact the server to verify if.  This will happen when the user agent is offline.
+**NetworkError**: some network error occurred that kept validation from completing.  That is, a receipt seemed okay but we weren't able to contact the server to verify if.  This will happen when the user agent is offline.
 
-**`ServerError`**: subclass of `NetworkError`; the server did something wrong.  This might be an invalid response from the server, or a wifi login in the way, or the server is down, etc.  Like a network error, it's not the user's fault!
+**ServerError**: subclass of `NetworkError`; the server did something wrong.  This might be an invalid response from the server, or a wifi login in the way, or the server is down, etc.  Like a network error, it's not the user's fault!
 
-**`VerificationIncomplete`**: this is the state until the verification actually completes.
+**VerificationIncomplete**: this is the state until the verification actually completes.
 
-**`NeedsInstall`**: an error that indicates the application needs to be installed.
+**NeedsInstall**: an error that indicates the application needs to be installed.
 
-**`NoReceipts`**: a subclass of `NeedsInstall`; the application is installed, but has no receipts.  This would probably be the result of a self-install or free install.
+**NoReceipts**: a subclass of `NeedsInstall`; the application is installed, but has no receipts.  This would probably be the result of a self-install or free install.
 
-**`NotInstalled`**: a subclass of `NeedsInstall`; the application is simply not installed.
+**NotInstalled**: a subclass of `NeedsInstall`; the application is simply not installed.
 
-**`InternalError`**: something went wrong with the verifier itself or the `navigator.mozApps` API.  This of course shouldn't happen; please report any such errors.
+**InternalError**: something went wrong with the verifier itself or the `navigator.mozApps` API.  This of course shouldn't happen; please report any such errors.
 
-**`MozAppsError`**: subclass of `InternalError`; this is generally an error with the `navigator.mozApps.getSelf()` call.
+**MozAppsError**: subclass of `InternalError`; this is generally an error with the `navigator.mozApps.getSelf()` call.
 
-**`VerifierError`**: subclass of `InternalError`; an exception somewhere in the verifier code.
+**VerifierError**: subclass of `InternalError`; an exception somewhere in the verifier code.
 
 There are also errors that can be assigned to individual receipts, contained in `OWAVerifier.errors`:
 
-**`InvalidFromStore`**: the store responded that the receipt is invalid.  This may mean the store has no record of the receipt, doesn't recognize the signature, or some other state.
+**InvalidFromStore**: the store responded that the receipt is invalid.  This may mean the store has no record of the receipt, doesn't recognize the signature, or some other state.
 
-**`ReceiptExpired`**: the store responded that the receipt has expired.  This is generally a recoverable error, in that the receipt can be refreshed once expired.  This refreshing has not yet been implemented.
+**ReceiptExpired**: the store responded that the receipt has expired.  This is generally a recoverable error, in that the receipt can be refreshed once expired.  This refreshing has not yet been implemented.
 
-**`Refunded`**: the store reports that the payment was refunded.
+**Refunded**: the store reports that the payment was refunded.
 
-**`InvalidReceiptIssuer`**: the receipt was issued by a store not listed in your `installs_allowed_from` list.
+**InvalidReceiptIssuer**: the receipt was issued by a store not listed in your `installs_allowed_from` list.
 
-**`ConnectionError`**: subclass of `OWAVerifier.states.NetworkError`; happens when the connection to the server fails.
+**ConnectionError**: subclass of `OWAVerifier.states.NetworkError`; happens when the connection to the server fails.
 
-**`RequestTimeout`**: a subclass of `OWAVerifier.states.NetworkError`; the request timed out.  You can set `verifier.requestTimeout` to a millisecond value to control this.
+**RequestTimeout**: a subclass of `OWAVerifier.states.NetworkError`; the request timed out.  You can set `verifier.requestTimeout` to a millisecond value to control this.
 
-**`ServerStatusError`**: a subclass of `OWAVerifier.states.ServerError`; the server responded with a non-200 response.
+**ServerStatusError**: a subclass of `OWAVerifier.states.ServerError`; the server responded with a non-200 response.
 
-**`InvalidServerResponse`**: a subclass of `OWAVerifier.states.ServerError`; the server responded with a non-JSON response, or a JSON response that didn't contain a valid `status`.
+**InvalidServerResponse**: a subclass of `OWAVerifier.states.ServerError`; the server responded with a non-JSON response, or a JSON response that didn't contain a valid `status`.
 
-**`ReceiptFormatError`**: the receipt itself is invalid.  It might be badly formatted, or is missing required properties.
+**ReceiptFormatError**: the receipt itself is invalid.  It might be badly formatted, or is missing required properties.
 
-**`ReceiptParseError`**: subclass of `ReceiptFormatError`; the receipt is not valid [JWT](http://tools.ietf.org/html/draft-jones-json-web-token-10).  This should only happen if the store that issued the receipt is simply broken, or the receipt was corrupted.
+**ReceiptParseError**: subclass of `ReceiptFormatError`; the receipt is not valid [JWT](http://tools.ietf.org/html/draft-jones-json-web-token-10).  This should only happen if the store that issued the receipt is simply broken, or the receipt was corrupted.
 
 
 ## Testing the library
