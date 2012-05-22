@@ -13,28 +13,26 @@ To use this, you'd do something like:
 
     var verifier = new OWAVerifier();
     verifier.verify(function (verifier) {
-      if (verifier.error.NEED_INSTALL) {
+      if (verifier.state instanceof verifier.states.NeedsInstall) {
         forcePurchase("You must install this app");
         return;
       }
-      if (verifier.error) {
-        if (verifier.error.INTERNAL_ERROR) {
-          // The verifier library itself got messed up; this shouldn't happen!
-          // It's up to you if you want to reject the user at this point
-          logToServer(verifier.app, verifier.error);
-        } else if (verifier.error.NETWORK_ERROR) {
-          // it was some kind of network or server error
-          // i.e., not the fault of the user
-          // you may want to let the user in, but for a limited time
-        } else if (verifier.error.REFUNDED) {
-          forcePurchase("You got a refund!  Buy it again if you've changed your mind");
-        } else {
-          // Some other error occurred; maybe it was never a valid receipt, maybe
-          // the receipt is corrupted, or someone is trying to mess around.
-          // It would not be a bad idea to log this.
-          logToServer(verifier.app.receipts, verifier.error);
-          forcePurchase("Your purchase is invalid; please purchase again, or reinstall from the Marketplace");
-        }
+      if (verifier.state instanceof verifier.states.NetworkError) {
+        // it was some kind of network or server error
+        // i.e., not the fault of the user
+        // you may want to let the user in, but for a limited time
+      } else if (verifier.state instanceof verifier.states.InternalError) {
+        // The verifier library itself got messed up; this shouldn't happen!
+        // It's up to you if you want to reject the user at this point
+        logToServer(verifier.app, verifier.error);
+      } else if {verifier.state instanceof verifier.states.OK) {
+        // Everything is cool
+      } else {
+        // Some other error occurred; maybe it was never a valid receipt, maybe
+        // the receipt is corrupted, or someone is trying to mess around.
+        // It would not be a bad idea to log this.
+        logToServer(verifier.app, verifier.receiptErrors);
+        forcePurchase("Your purchase is invalid; please purchase again, or reinstall from the Marketplace");
       }
     });
 
@@ -44,20 +42,20 @@ To use this, you'd do something like:
       location.href = 'https://marketplace.mozilla.org/en-US/app/myapp';
     }
 
-    function logToServer(appData, errorData) {
+    function logToServer(app, data) {
       try {
-        appData = JSON.stringify(appData);
+        app = JSON.stringify(app);
       } catch (e) {
-        appData = appData + '';
+        app = app + '';
       }
       try {
-        errorData = JSON.stringify(errorData);
+        data = JSON.stringify(data);
       } catch (e) {
-        errorData = errorData + '';
+        data = data + '';
       }
       var req = new XMLHttpRequest();
       req.open('POST', '/receipt-error-log');
-      req.send('appdata=' + encodeURIComponent(appData) + '&error=' + encodeURIComponent(errorData));
+      req.send('app=' + encodeURIComponent(app) + '&error=' + encodeURIComponent(data));
     }
 
 ### Testing the library
@@ -74,9 +72,6 @@ you expect, etc).
 
 ### To Do
 
-* Change `.error` to `.state` to represent a more general sort of
-  state (installed, uninstalled, and the errors).
-
 * Include a direct option to allow receipt checking to pass for a
   while when there's a network error.  One option to allow the stale
   cached value, and another option to allow no verification at all to
@@ -84,8 +79,6 @@ you expect, etc).
   to time-limit.
 
 * Smarter time/polling suggestions, especially during the refund window.
-
-* Add a logging option.  E.g., `verifier.onlog = function (message) {}`
 
 * Include something like `logToServer` in the verifier itself.
 
@@ -100,3 +93,5 @@ you expect, etc).
 
 * Better testing, of course.  More automated testing wouldn't be able
   to interact directly with the Marketplace though.
+
+* Do some checking of `installOrigin` and the receipt origin.

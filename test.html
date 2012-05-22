@@ -15,7 +15,7 @@
       <pre class="doctest">
 
 $ doctest.defaultTimeout = 20000;
-$ v = new OWAVerifier({requestTimeout: 19000});
+$ v = new OWAVerifier({requestTimeout: 19000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
 $ v.clearCache();
 $ r = navigator.mozApps.getSelf();
 > r.onsuccess = Spy('onsuccess', {wait: true});
@@ -26,10 +26,14 @@ $ writeln(r.result.receipts.length);
 ?
 $ writeln(r.result.receipts);
 [...]
+$ writeln('curl -d ', r.result.receipts[0], ' ', OWAVerifier.prototype.parseReceipt(r.result.receipts[0]).verify);
+...
 $ v.verify(Spy('verify', {wait: true}));
-verify([OWAVerifier error status: ... installed app: http...])
+verify([OWAVerifier state: ... installed app: http...])
 $ writeln(v.products);
 [...]
+$ writeln(v.receiptErrors);
+{...}
 
 </pre>
       </div>
