@@ -10,9 +10,7 @@
 
     <h1>OWAValidator tests</h1>
 
-    <div class="test">
-
-      <pre class="doctest">
+<div class="test"><pre class="doctest">
 
 $ doctest.defaultTimeout = 20000;
 $ v = new OWAVerifier({requestTimeout: 19000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
@@ -35,7 +33,15 @@ $ writeln(v.products);
 $ writeln(v.receiptErrors);
 {...}
 
-</pre>
-      </div>
+</pre></div>
+
+<div class="test"><pre class="doctest">
+
+$ writeln(OWAVerifier.states);
+{...}
+$ writeln(OWAVerifier.errors);
+{...}
+
+</pre></div>
 
     </body></html>
