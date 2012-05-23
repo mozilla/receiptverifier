@@ -66,7 +66,7 @@ The `verifier.state` object can be an instance of one of these items; each is a 
 
 **OK**: everything went okay!
 
-**NoValidReceipts**: the application is installed, and has receipts, but none of the receipts are valid.  The receipts may be syntactically invalid, may be part of a store that's not expected, may be rejected by the store as invalid, or may be refunded.  Look to `verifier.receiptErrors` for details.
+**NoValidReceipts**: the application is installed, and has receipts, but none of the receipts are valid.  The receipts may be syntactically invalid, may be from a store that is not allowed, may be rejected by the store as invalid, or may be refunded.  Look to `verifier.receiptErrors` for details.
 
 **NetworkError**: some network error occurred that kept validation from completing.  That is, a receipt seemed okay but we weren't able to contact the server to verify if.  This will happen when the user agent is offline.
 
@@ -88,9 +88,9 @@ The `verifier.state` object can be an instance of one of these items; each is a 
 
 There are also errors that can be assigned to individual receipts, contained in `OWAVerifier.errors`:
 
-**InvalidFromStore**: the store responded that the receipt is invalid.  This may mean the store has no record of the receipt, doesn't recognize the signature, or some other state.
+**InvalidFromStore**: the store responded that the receipt is invalid. This may mean the store has no record of the receipt, doesn't recognize the signature, or some other state.
 
-**ReceiptExpired**: the store responded that the receipt has expired.  This is generally a recoverable error, in that the receipt can be refreshed once expired.  This refreshing has not yet been implemented.
+**ReceiptExpired**: the store responded that the receipt has expired. This is generally a recoverable error, in that the receipt can be refreshed once expired.  This refreshing has not yet been implemented.
 
 **Refunded**: the store reports that the payment was refunded.
 
@@ -116,17 +116,15 @@ The testing is a bit ad hoc, but it does exist.  To test the library get an app 
 
 ## To Do
 
-* Include a direct option to allow receipt checking to pass for a while when there's a network error.  One option to allow the stale cached value, and another option to allow no verification at all to occur when there's a network error.  This requies some persistance to time-limit.
-
-* Smarter time/polling suggestions, especially during the refund window.
+* Express the use of a cached or stale cache value in the state (maybe subclasses of OK)
 
 * Include something like `logToServer` in the verifier itself.
 
 * Maybe look into logging to the Marketplace itself.
 
-* This requires [CORS](http://www.w3.org/TR/cors/), but the Marketplace doesn't have another way to access the validator.  Investigate JSONP?
+* This requires [CORS](http://www.w3.org/TR/cors/), but the Marketplace doesn't have another way to access the validator. Investigate JSONP?
 
-* Consider encapsulating this more.  Might guard against at least the most trivial hacks.
+* Consider encapsulating this more.  Might guard against at least the most trivial hacks.  Note that many attributes are exposed through the objects.
 
 * Better testing, of course.  More automated testing wouldn't be able to interact directly with the Marketplace though.
 
