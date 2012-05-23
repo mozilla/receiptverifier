@@ -1,0 +1,6 @@
+[submodule "MockHttpRequest"]
+	path = MockHttpRequest
+	url = https://github.com/philikon/MockHttpRequest.git
+[submodule "doctestjs"]
+	path = doctestjs
+	url = https://github.com/ianb/doctestjs.git

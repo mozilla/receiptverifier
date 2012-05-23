@@ -1,38 +1,163 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
-    <script src="http://ianb.github.com/doctestjs/doctest.js"></script>
-    <link rel="stylesheet" type="text/css" href="http://ianb.github.com/doctestjs/doctest.css">
+    <script src="doctestjs/doctest.js"></script>
+    <link rel="stylesheet" type="text/css" href="doctestjs/doctest.css">
     <script src="helpers.js"></script>
+    <script src="MockHttpRequest/lib/mock.js"></script>
+    <script src="urlmatch.js"></script>
+    <script src="mocks.js"></script>
+    <script>
+RESPONSE = {};
+function handler(req) {
+  writeln(req.method, req.url);
+  var headers = [];
+  for (var i in req.requestHeaders) {
+    headers.push(i);
+  }
+  headers.sort();
+  headers.forEach(function (header) {
+    writeln(header + ': ' + req.requestHeaders[header]);
+  });
+  if (req.requestText) {
+    writeln('Body:', req.requestText);
+  }
+  if (RESPONSE.error) {
+    req.err(RESPONSE.error);
+  } else {
+    var data = RESPONSE.data;
+    if (typeof data != "string") {
+      data = JSON.stringify(data);
+    }
+    req.receive(RESPONSE.status || 200, data);
+  }
+}
+
+function makeReceipt(data) {
+  var data = OWAVerifier.prototype._base64urlencode(JSON.stringify(data));
+  return 'x~x.' + data + '.x';
+}
+
+MockHttpRequest.prototype.toSource = function () {
+  return '[MockHttpRequest]';
+};
+
+    </script>
     <title>OWAValidator tests</title>
   </head>
   <body class="autodoctest">
 
     <h1>OWAValidator tests</h1>
 
-<div class="test"><pre class="doctest">
+<div class="test">
+<h2>Setup</h2>
+
+Wherein we just get the mocks going...
+
+  <pre class="doctest">
 
 $ doctest.defaultTimeout = 20000;
-$ v = new OWAVerifier({requestTimeout: 19000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
-$ v.clearCache();
+$ mockMozApps.monkeypatch();
+$ thisOrigin = URLParse(location.href).originOnly().toString();
+$ pending = new DOMRequest();
+$ receipt = makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}});
+$ pending.onsuccess = Spy('onsuccess', {wait: true});
+> mockMozApps._installManifest(thisOrigin + '/manifest.webapp', {name: "my app"}, thisOrigin, {receipts: [receipt]}, pending);
+[object DOMRequest].onsuccess([object Event])
+$ appData = pending.result._rawData;
+> writeln(appData);
+{...}
+$ server = new MockHttpServer(handler);
+$ server.start();
+
+</pre></div>
+
+<div class="test">
+<h2>Do the verification</h2>
+
+<pre class="doctest">
+$ v = null;
 $ r = navigator.mozApps.getSelf();
 > r.onsuccess = Spy('onsuccess', {wait: true});
 > r.onerror = Spy('onerror');
 Spy('onerror')
 [object DOMRequest].onsuccess([object Event])
 $ writeln(r.result.receipts.length);
-?
+1
 $ writeln(r.result.receipts);
 [...]
-$ writeln('curl -d ', r.result.receipts[0], ' ', OWAVerifier.prototype.parseReceipt(r.result.receipts[0]).verify);
-...
-$ v.verify(Spy('verify', {wait: true}));
-verify([OWAVerifier state: ... installed app: http...])
+$ RESPONSE = {data: {status: "ok"}};
+$ function verify(noClear) {
+>   v = new OWAVerifier({requestTimeout: 19000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
+>   if (! noClear) {
+>     v.clearCache();
+>   }
+>   v.verify(Spy('verify', {wait: true}));
+> }
+$ verify();
+POST http://example.com/verifier
+Body: x~x...x
+verify([OWAVerifier state: [OK] products: http://whatever.com installed app: ...])
 $ writeln(v.products);
-[...]
+[{url: "http://whatever.com"}]
 $ writeln(v.receiptErrors);
-{...}
+{}
 
+</pre></div>
+
+<div class="test">
+<h2>Exercise failures</h2>
+<pre class="doctest">
+$ RESPONSE = {data: {status: "invalid"}};
+$ verify();
+POST ...
+Body: ...
+verify([OWAVerifier state: [NoValidReceipts No receipts passed verification] Error(...): [InvalidFromStore ...] installed app: ...])
+$ RESPONSE = {data: {status: "ok"}};
+$ appData.installData.receipts = ['xxxx'];
+$ verify();
+verify([OWAVerifier state: [NoValidReceipts No receipts passed verification] Error(...): [ReceiptParseError Error decoding JSON...] installed app: ...])
+$ appData.installData.receipts = [makeReceipt({})];
+$ verify();
+verify([OWAVerifier state: [NoValidReceipts ...] Error(...): [ReceiptFormatError No (or empty) iss field...]...])
+$ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}})];
+$ appData.manifest.installs_allowed_from = ['http://store.example.com'];
+$ verify();
+verify([OWAVerifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer ...]...])
+$ appData.manifest.installs_allowed_from = ['http://store.example.com'];
+$ verify();
+verify([OWAVerifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer Issuer (iss) of receipt is not a valid installer: http://example.com ...]...])
+$ appData.manifest.installs_allowed_from = ['*'];
+$ verify();
+POST ...
+Body: ...
+verify([OWAVerifier state: [OK]...])
+</pre></div>
+
+<div class="test">
+<h2>Some server errors</h2>
+<pre class="doctest">
+$ RESPONSE = {status: 0, data: ""};
+$ verify();
+...
+verify([OWAVerifier state: [InvalidServerResponse Invalid JSON from server request: ... text: ""]...])
+$ RESPONSE = {status: 404, data: "a bunch of text"};
+$ verify();
+...
+verify([OWAVerifier state: [ServerStatusError Server responded with 404 to http://example.com/verifier ...]...])
+$ RESPONSE = {status: 500, data: "some other error text"};
+$ verify();
+...
+verify([OWAVerifier state: [ServerStatusError Server responded with non-200 status: 500 ...]...])
+$ RESPONSE = {status: 200, data: "Please log into our dumb wifi"};
+$ verify();
+...
+verify([OWAVerifier state: [InvalidServerResponse Invalid JSON from server...]...])
+$ RESPONSE = {status: 200, data: "null"};
+$ verify();
+...
+verify([OWAVerifier state: [InvalidServerResponse Server did not respond with a JSON object (null)...]...])
 </pre></div>
 
 <div class="test"><pre class="doctest">
