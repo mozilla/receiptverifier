@@ -11,6 +11,7 @@ var OWAVerifier = function (options) {
   this.cacheCheckInterval = options.cacheCheckInterval || (1000 * 60 * 60 * 24);
   this.state = this.states.VerificationIncomplete('.verify() has not been called');
   this.requestTimeout = options.requestTimeout || 30000;
+  this.refundWindow = options.refundWindow || 1000 * 60 * 40; // 40 minutes, a rounded up value from the marketplace
   this.installs_allowed_from = options.installs_allowed_from || undefined;
   this.onlog = options.onlog;
   if (options.logLevel) {
@@ -59,7 +60,12 @@ OWAVerifier.State.prototype.toString = function () {
   }
   for (var i in this) {
     if (this.hasOwnProperty(i) && i != 'detail') {
-      s += ' ' + i + ': ' + JSON.stringify(this[i]);
+      if (typeof this[i] == "object" && this[i].toSource) {
+        var repr = this[i].toSource();
+      } else {
+        var repr = JSON.stringify(this[i]);
+      }
+      s += ' ' + i + ': ' + repr;
     }
   }
   s += ']';
@@ -113,7 +119,12 @@ OWAVerifier.prototype = {
       s += ' products: ' + this.products.map(function (i) {return i.url;}).join(', ');
     }
     this.iterReceiptErrors(function (receipt, error) {
-      s += ' Error(' + receipt.substr(0, 4) + '...' + receipt.substr(receipt.length-4) + '): ' + error;
+      if (error == self.state) {
+        // Sometimes a receipt error is promoted to the state
+        s += ' Error(' + receipt.substr(0, 4) + '...' + receipt.substr(receipt.length-4) + '): [error is state]';
+      } else {
+        s += ' Error(' + receipt.substr(0, 4) + '...' + receipt.substr(receipt.length-4) + '): ' + error;
+      }
     });
     if (this.app) {
       s += ' installed app: ' + this.app.manifestURL;
@@ -172,10 +183,14 @@ OWAVerifier.prototype = {
     var self = this;
     app.receipts.forEach(function (receipt) {
       self.log(self.levels.DEBUG, "Checking receipt " + receipt.substr(0, 4));
-      var result = self.checkCache(receipt);
+      var result = self.checkCache(receipt, false);
       if (result) {
         self.log(self.levels.INFO, "Got receipt (" + receipt.substr(0, 4) + ") status from cache: " + JSON.stringify(result));
         self._addReceiptVerification(receipt, result);
+        pending--;
+        if (! pending) {
+          self._finishVerification(onVerified);
+        }
         return;
       }
       try {
@@ -286,12 +301,17 @@ OWAVerifier.prototype = {
         callback();
         return;
       }
-      // FIXME: should represent pending better:
+      if (typeof result != "object" || result === null) {
+        self._addReceiptError(receipt, new self.errors.InvalidServerResponse("Server did not respond with a JSON object (" + JSON.stringify(result) + ")", {request: req, text: req.responseText}));
+        callback();
+        return;
+      }
       self.log(self.levels.INFO, "Receipt (" + receipt.substr(0, 4) + "...) completed with result: " + JSON.stringify(result));
       if (result.status == "ok" || result.status == "pending") {
+        // FIXME: should represent pending better:
         self._addReceiptVerification(receipt, result);
         if (result.status == "ok") {
-          self.saveResults(receipt, result);
+          self.saveResults(receipt, parsed, result);
         }
         callback();
         return;
@@ -345,7 +365,7 @@ OWAVerifier.prototype = {
     this.products.push(this.parseReceipt(receipt).product);
   },
 
-  checkCache: function (receipt) {
+  checkCache: function (receipt, networkFailure) {
     // FIXME: this should distinguish between getting a cached value when it's helpful
     // and when it's needed (due to network error)
     if (! this._cacheStorage) {
@@ -362,25 +382,37 @@ OWAVerifier.prototype = {
       this._cacheStorage.removeItem(key);
       return null;
     }
-    if (value.created + this.checkInterval > Date.now()) {
-      // FIXME: maybe make this a fallback?
-      return null;
+    var result = value.result;
+    if (! networkFailure) {
+      if (value.created + this.checkInterval > Date.now()) {
+        return null;
+      }
+      if (result.status == "pending") {
+        // If it was pending we should check again
+        return null;
+      }
+      var parsed = this.parseReceipt(receipt);
+      if (parsed.iat && value.created - parsed.iat < this.refundWindow && Date.now() - parsed.iat > this.refundWindow) {
+        // The receipt was last checked during the refund window, and
+        // the refund window has passed, so we should check the
+        // receipt again
+        return null;
+      }
+      return result;
+    } else {
+      // If there was a network failure we should offer whatever value
+      // we have cached
+      return result;
     }
-    return value.result;
   },
 
-  saveResults: function (receipt, results) {
+  saveResults: function (receipt, parsedReceipt, result) {
     if (! this._cacheStorage) {
       return;
     }
-    for (var receipt in results) {
-      if (! results.hasOwnProperty(receipt)) {
-        continue;
-      }
-      var key = this._makeKey(receipt);
-      var value = {created: Date.now(), result: results[receipt]};
-      this._cacheStorage.setItem(key, JSON.stringify(value));
-    }
+    var key = this._makeKey(receipt);
+    var value = {created: Date.now(), result: result};
+    this._cacheStorage.setItem(key, JSON.stringify(value));
   },
 
   clearCache: function () {
@@ -426,6 +458,14 @@ OWAVerifier.prototype = {
       default: throw "Illegal base64url string!";
     }
     return atob(s); // Standard base64 decoder
+  },
+
+  _base64urlencode: function (s) {
+    s = btoa(s);
+    s = s.replace(/\+/g, '-');
+    s = s.replace(/\//g, '_');
+    s = s.replace(/[\n=]/g, '');
+    return s;
   },
 
   levels: {
