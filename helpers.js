@@ -13,7 +13,7 @@ var OWAVerifier = function (options) {
   this.receiptErrors = {};
   this.receiptVerifications = {};
   this._cacheStorage = options.cacheStorage || localStorage;
-  this.cacheCheckInterval = options.cacheCheckInterval || (1000 * 60 * 60 * 24);
+  this.cacheTimeout = options.cacheTimeout || (1000 * 60 * 60 * 24);
   this.state = this.states.VerificationIncomplete('.verify() has not been called');
   this.requestTimeout = options.requestTimeout || 30000;
   this.refundWindow = options.refundWindow || 1000 * 60 * 40; // 40 minutes, a rounded up value from the marketplace
@@ -65,7 +65,7 @@ OWAVerifier.State.prototype.toString = function () {
   }
   for (var i in this) {
     if (this.hasOwnProperty(i) && i != 'detail') {
-      if (typeof this[i] == "object" && this[i].toSource) {
+      if (typeof this[i] == "object" && this[i] && this[i].toSource) {
         var repr = this[i].toSource();
       } else {
         var repr = JSON.stringify(this[i]);
@@ -85,6 +85,8 @@ OWAVerifier.states.NotInstalled = OWAVerifier.State("NotInstalled", OWAVerifier.
 OWAVerifier.states.NoReceipts = OWAVerifier.State("NoReceipts", OWAVerifier.states.NeedsInstall);
 OWAVerifier.states.NoValidReceipts = OWAVerifier.State("NoValidReceipts");
 OWAVerifier.states.OK = OWAVerifier.State("OK");
+OWAVerifier.states.OKCache = OWAVerifier.State("OKCache", OWAVerifier.states.OK);
+OWAVerifier.states.OKStaleCache = OWAVerifier.State("OKStaleCache", OWAVerifier.states.OKCache);
 OWAVerifier.states.InternalError = OWAVerifier.State("InternalError");
 OWAVerifier.states.MozAppsError = OWAVerifier.State("MozAppsError", OWAVerifier.states.InternalError);
 OWAVerifier.states.VerifierError = OWAVerifier.State("VerifierError", OWAVerifier.states.InternalError);
@@ -118,7 +120,7 @@ OWAVerifier.errors.toString = OWAVerifier.states.toString;
 OWAVerifier.prototype = {
 
   _validConstructorArguments: [
-    'cacheStorage', 'checkCacheInterval', 'requestTimeout',
+    'cacheStorage', 'cacheTimeout', 'requestTimeout',
     'refundWindow', 'installs_allowed_from', 'onlog',
     'logLevel'
   ],
@@ -197,6 +199,7 @@ OWAVerifier.prototype = {
       var result = self.checkCache(receipt, false);
       if (result) {
         self.log(self.levels.INFO, "Got receipt (" + receipt.substr(0, 4) + ") status from cache: " + JSON.stringify(result));
+        self._addReceiptError(receipt, new self.states.OKCache());
         self._addReceiptVerification(receipt, result);
         pending--;
         if (! pending) {
@@ -322,6 +325,7 @@ OWAVerifier.prototype = {
         // FIXME: should represent pending better:
         self._addReceiptVerification(receipt, result);
         if (result.status == "ok") {
+          // FIXME: maybe pending should be saved too, in case of future network error
           self.saveResults(receipt, parsed, result);
         }
         callback();
@@ -366,7 +370,21 @@ OWAVerifier.prototype = {
   _addReceiptError: function (receipt, error) {
     this.receiptErrors[receipt] = error;
     if (error instanceof this.states.NetworkError) {
+      var result = this.checkCache(receipt, true);
+      if (result) {
+        this.log("Got stale receipt (" + receipt.substr(0, 4) + ") status from cache: " + JSON.stringify(result));
+        this._addReceiptVerification(receipt, result);
+        this._addReceiptError(receipt, new this.states.OKStaleCache("Used a stale cache because of network error: " + error));
+        return;
+      }
+    }
+    if (error instanceof this.states.NetworkError) {
       if (this.state instanceof this.states.VerificationIncomplete) {
+        this.state = error;
+      }
+    } else if (error instanceof this.states.OK) {
+      // A soft error
+      if (this.state instanceof this.states.OK || this.state instanceof this.states.VerificationIncomplete) {
         this.state = error;
       }
     }
@@ -396,7 +414,8 @@ OWAVerifier.prototype = {
     }
     var result = value.result;
     if (! networkFailure) {
-      if (value.created + this.checkInterval > Date.now()) {
+      if (Date.now() - value.created > this.cacheTimeout) {
+        this.log(this.levels.INFO, "Not using cache value because it is expired");
         return null;
       }
       if (result.status == "pending") {
