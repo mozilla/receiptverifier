@@ -344,9 +344,10 @@ OWAVerifier.prototype = {
         self._addReceiptError(
           receipt,
           new self.errors.RequestTimeout(
-            "The request timed out after " + this.requestTimeout + " milliseconds",
+            "The request timed out after " + self.requestTimeout + " milliseconds",
             {request: req, url: verify})
         );
+        callback();
       }, this.requestTimeout);
     }
   },
