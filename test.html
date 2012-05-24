@@ -201,7 +201,7 @@ $ // First we test that the cache is hit on the second call:
 > verifyCached();
 POST http://example.com/verifier
 First completed: [OK]
-Second completed: [OK]
+Second completed: [OKCache]
 $ RESPONSE = {data: {status: "pending"}};
 $ // Now the cache shouldn't be hit, because of the new pending status:
 > verifyCached();
@@ -216,12 +216,11 @@ POST http://example.com/verifier
 First completed: [NoValidReceipts No receipts passed verification]
 POST http://example.com/verifier
 Second completed: [NoValidReceipts No receipts passed verification]
-$ RESPONSE = {data: {status: "ok"}};
+$ RESPONSE = {data: {status: "ok"}, quiet: true};
 $ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}, iat: Date.now()})];
 $ // A recently-fetched receipt won't be cached
 > v = new OWAVerifier(owaArgs);
 $ v.clearCache();
-$ RESPONSE.quiet = true;
 $ v.verify(Spy('verify', {wait: true}));
 POST http://example.com/verifier
 verify([OWAVerifier state: [OK]...])
@@ -235,7 +234,29 @@ $ // But now it won't need another cache check...
 $ v = new OWAVerifier(owaArgs);
 $ v.refundWindow = 1000;
 $ v.verify(Spy('verify', {wait: true}));
+verify([OWAVerifier state: [OKCache]...])
+$ // Lastly, we can get a stale cache item if there's a network error
+$ vOk = new OWAVerifier(owaArgs);
+$ vOk.clearCache();
+$ vOk.verify(Spy('verify', {wait: true}));
+POST http://example.com/verifier
 verify([OWAVerifier state: [OK]...])
+$ vCache = new OWAVerifier(owaArgs);
+$ vCache.verify(Spy('verify', {wait: true}));
+verify([OWAVerifier state: [OKCache]...])
+$ RESPONSE = {data: "invalid", quiet: true};
+$ vStale = new OWAVerifier(owaArgs);
+$ vStale.cacheTimeout = 5;
+$ vStale.verify(Spy('verify', {wait: true}));
+POST http://example.com/verifier
+verify([OWAVerifier state: [OKStaleCache Used a stale cache because of network error: [InvalidServerResponse...])
+$ vForce = new OWAVerifier(owaArgs);
+$ vForce.clearCache();
+$ vForce.cacheTimeout = 5;
+$ vForce.verify(Spy('verify', {wait: true}));
+POST http://example.com/verifier
+verify([OWAVerifier state: [InvalidServerResponse ...]...])
+$ // FIXME: I should test with a pending result (and figure out what it should do)
 
 </pre></div>
 
