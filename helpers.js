@@ -3,6 +3,11 @@ var OWAVerifier = function (options) {
     throw 'You forgot new';
   }
   options = options || {};
+  for (var i in options) {
+    if (options.hasOwnProperty(i) && this._validConstructorArguments.indexOf(i) == -1) {
+      throw 'Illegal option to OWAVerifier({}): ' + i;
+    }
+  }
   this.app = undefined;
   this.products = [];
   this.receiptErrors = {};
@@ -111,6 +116,12 @@ OWAVerifier.errors.ReceiptExpired = OWAVerifier.State("ReceiptExpired");
 OWAVerifier.errors.toString = OWAVerifier.states.toString;
 
 OWAVerifier.prototype = {
+
+  _validConstructorArguments: [
+    'cacheStorage', 'checkCacheInterval', 'requestTimeout',
+    'refundWindow', 'installs_allowed_from', 'onlog',
+    'logLevel'
+  ],
 
   toString: function () {
     var self = this;
@@ -393,7 +404,9 @@ OWAVerifier.prototype = {
         return null;
       }
       var parsed = this.parseReceipt(receipt);
-      if (parsed.iat && value.created - parsed.iat < this.refundWindow && Date.now() - parsed.iat > this.refundWindow) {
+      if (parsed.iat && this.refundWindow &&
+          value.created - parsed.iat < this.refundWindow &&
+          Date.now() - parsed.iat > this.refundWindow) {
         // The receipt was last checked during the refund window, and
         // the refund window has passed, so we should check the
         // receipt again
