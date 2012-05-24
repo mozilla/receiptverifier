@@ -12,20 +12,23 @@
 RESPONSE = {};
 function handler(req) {
   writeln(req.method, req.url);
-  var headers = [];
-  for (var i in req.requestHeaders) {
-    headers.push(i);
-  }
-  headers.sort();
-  headers.forEach(function (header) {
-    writeln(header + ': ' + req.requestHeaders[header]);
-  });
-  if (req.requestText) {
-    writeln('Body:', req.requestText);
+  if (! RESPONSE.quiet) {
+    var headers = [];
+    for (var i in req.requestHeaders) {
+      headers.push(i);
+    }
+    headers.sort();
+    headers.forEach(function (header) {
+      writeln(header + ': ' + req.requestHeaders[header]);
+    });
+    if (req.requestText) {
+      writeln('Body:', req.requestText);
+    }
   }
   if (RESPONSE.error) {
     req.err(RESPONSE.error);
   } else {
+    console.log('sending response', RESPONSE);
     var data = RESPONSE.data;
     if (typeof data != "string") {
       data = JSON.stringify(data);
@@ -88,8 +91,9 @@ $ writeln(r.result.receipts.length);
 $ writeln(r.result.receipts);
 [...]
 $ RESPONSE = {data: {status: "ok"}};
+$ owaArgs = {requestTimeout: 1000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger}
 $ function verify(noClear, waitTime) {
->   v = new OWAVerifier({requestTimeout: 1000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
+>   v = new OWAVerifier(owaArgs);
 >   if (! noClear) {
 >     v.clearCache();
 >   }
@@ -170,12 +174,81 @@ $ verify(false, 2000);
 verify([OWAVerifier state: [RequestTimeout The request timed out after ? milliseconds...]...])
 </pre></div>
 
+<div class="test">
+<h2>Let's test caching!</h2>
+<pre class="doctest">
+$ function verifyCached(refundWindow) {
+>   RESPONSE.quiet = true;
+>   v = new OWAVerifier(owaArgs);
+>   v.clearCache();
+>   var done = false;
+>   v.verify(function () {
+>     writeln('First completed:', v.state);
+>     v2 = new OWAVerifier(owaArgs);
+>     if (refundWindow) {
+>       v2.refundWindow = refundWindow;
+>     }
+>     v2.verify(function () {
+>       writeln('Second completed:', v2.state);
+>       done = true;
+>     });
+>   });
+>   wait(function () {return done;});
+> }
+$ server.handle = handler;
+$ RESPONSE = {data: {status: "ok"}};
+$ // First we test that the cache is hit on the second call:
+> verifyCached();
+POST http://example.com/verifier
+First completed: [OK]
+Second completed: [OK]
+$ RESPONSE = {data: {status: "pending"}};
+$ // Now the cache shouldn't be hit, because of the new pending status:
+> verifyCached();
+POST http://example.com/verifier
+First completed: [OK]
+POST http://example.com/verifier
+Second completed: [OK]
+$ RESPONSE = {data: {status: "invalid"}};
+$ // Also invalid responses aren't cached
+> verifyCached();
+POST http://example.com/verifier
+First completed: [NoValidReceipts No receipts passed verification]
+POST http://example.com/verifier
+Second completed: [NoValidReceipts No receipts passed verification]
+$ RESPONSE = {data: {status: "ok"}};
+$ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}, iat: Date.now()})];
+$ // A recently-fetched receipt won't be cached
+> v = new OWAVerifier(owaArgs);
+$ v.clearCache();
+$ RESPONSE.quiet = true;
+$ v.verify(Spy('verify', {wait: true}));
+POST http://example.com/verifier
+verify([OWAVerifier state: [OK]...])
+$ wait(1000);
+$ v = new OWAVerifier(owaArgs);
+$ v.refundWindow = 1000;
+$ v.verify(Spy('verify', {wait: true}));
+POST http://example.com/verifier
+verify([OWAVerifier state: [OK]...])
+$ // But now it won't need another cache check...
+$ v = new OWAVerifier(owaArgs);
+$ v.refundWindow = 1000;
+$ v.verify(Spy('verify', {wait: true}));
+verify([OWAVerifier state: [OK]...])
+
+</pre></div>
+
 <div class="test"><pre class="doctest">
 
 $ writeln(OWAVerifier.states);
 {...}
 $ writeln(OWAVerifier.errors);
 {...}
+$ OWAVerifier({});
+Error: You forgot new
+$ new OWAVerifier({reqertTimeout: 10});
+Error: Illegal option to OWAVerifier({}): reqertTimeout
 
 </pre></div>
 
