@@ -88,12 +88,15 @@ $ writeln(r.result.receipts.length);
 $ writeln(r.result.receipts);
 [...]
 $ RESPONSE = {data: {status: "ok"}};
-$ function verify(noClear) {
->   v = new OWAVerifier({requestTimeout: 19000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
+$ function verify(noClear, waitTime) {
+>   v = new OWAVerifier({requestTimeout: 1000, logLevel: "INFO", onlog: OWAVerifier.consoleLogger});
 >   if (! noClear) {
 >     v.clearCache();
 >   }
->   v.verify(Spy('verify', {wait: true}));
+>   if (waitTime === undefined) {
+>     waitTime = true;
+>   }
+>   v.verify(Spy('verify', {wait: waitTime}));
 > }
 $ verify();
 POST http://example.com/verifier
@@ -158,6 +161,13 @@ $ RESPONSE = {status: 200, data: "null"};
 $ verify();
 ...
 verify([OWAVerifier state: [InvalidServerResponse Server did not respond with a JSON object (null)...]...])
+$ RESPONSE = {status: 200, data: {status: "refundido"}};
+$ verify();
+...
+verify([OWAVerifier state: [InvalidServerResponse Store replied with unknown status: refundido...]...])
+$ server.handle = function () { /* look at us do nothing ... */ };
+$ verify(false, 2000);
+verify([OWAVerifier state: [RequestTimeout The request timed out after ? milliseconds...]...])
 </pre></div>
 
 <div class="test"><pre class="doctest">
