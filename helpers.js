@@ -1,11 +1,13 @@
-var OWAVerifier = function (options) {
+(function (exports) {
+
+var ReceiptVerifier = function (options) {
   if (this == window) {
     throw 'You forgot new';
   }
   options = options || {};
   for (var i in options) {
     if (options.hasOwnProperty(i) && this._validConstructorArguments.indexOf(i) == -1) {
-      throw 'Illegal option to OWAVerifier({}): ' + i;
+      throw 'Illegal option to ReceiptVerifier({}): ' + i;
     }
   }
   this.app = undefined;
@@ -13,10 +15,10 @@ var OWAVerifier = function (options) {
   this.receiptErrors = {};
   this.receiptVerifications = {};
   this._cacheStorage = options.cacheStorage || localStorage;
-  this.cacheTimeout = options.cacheTimeout || (1000 * 60 * 60 * 24);
+  this.cacheTimeout = options.cacheTimeout || this.defaultCacheTimeout;
   this.state = this.states.VerificationIncomplete('.verify() has not been called');
-  this.requestTimeout = options.requestTimeout || 30000;
-  this.refundWindow = options.refundWindow || 1000 * 60 * 40; // 40 minutes, a rounded up value from the marketplace
+  this.requestTimeout = options.requestTimeout || this.defaultRequestTimeout;
+  this.refundWindow = options.refundWindow || this.defaultRefundWindow;
   this.installs_allowed_from = options.installs_allowed_from || undefined;
   this.onlog = options.onlog;
   if (options.logLevel) {
@@ -28,7 +30,7 @@ var OWAVerifier = function (options) {
   }
 };
 
-OWAVerifier._extend = function (obj, attrs) {
+function _extend(obj, attrs) {
   if (attrs) {
     for (var i in attrs) {
       if (attrs.hasOwnProperty(i)) {
@@ -38,7 +40,7 @@ OWAVerifier._extend = function (obj, attrs) {
   }
 };
 
-OWAVerifier.State = function (name, superclass) {
+ReceiptVerifier.State = function (name, superclass) {
   if (name === undefined) {
     return this;
   }
@@ -47,10 +49,10 @@ OWAVerifier.State = function (name, superclass) {
       throw 'You forgot new';
     }
     this.detail = detail;
-    OWAVerifier._extend(this, attrs);
+    _extend(this, attrs);
   }
   if (superclass === undefined) {
-    superclass = OWAVerifier.State;
+    superclass = ReceiptVerifier.State;
   }
   NewState.prototype = new superclass();
   NewState.name = name;
@@ -58,7 +60,7 @@ OWAVerifier.State = function (name, superclass) {
   return NewState;
 };
 
-OWAVerifier.State.prototype.toString = function () {
+ReceiptVerifier.State.prototype.toString = function () {
   var s = '[' + this.name;
   if (this.detail) {
     s += ' ' + this.detail;
@@ -77,22 +79,22 @@ OWAVerifier.State.prototype.toString = function () {
   return s;
 };
 
-OWAVerifier.states = {};
-OWAVerifier.states.VerificationIncomplete = OWAVerifier.State("VerificationIncomplete");
-OWAVerifier.states.NeedsInstall = OWAVerifier.State("NeedsInstall");
-OWAVerifier.states.NetworkError = OWAVerifier.State("NetworkError");
-OWAVerifier.states.NotInstalled = OWAVerifier.State("NotInstalled", OWAVerifier.states.NeedsInstall);
-OWAVerifier.states.NoReceipts = OWAVerifier.State("NoReceipts", OWAVerifier.states.NeedsInstall);
-OWAVerifier.states.NoValidReceipts = OWAVerifier.State("NoValidReceipts");
-OWAVerifier.states.OK = OWAVerifier.State("OK");
-OWAVerifier.states.OKCache = OWAVerifier.State("OKCache", OWAVerifier.states.OK);
-OWAVerifier.states.OKStaleCache = OWAVerifier.State("OKStaleCache", OWAVerifier.states.OKCache);
-OWAVerifier.states.InternalError = OWAVerifier.State("InternalError");
-OWAVerifier.states.MozAppsError = OWAVerifier.State("MozAppsError", OWAVerifier.states.InternalError);
-OWAVerifier.states.VerifierError = OWAVerifier.State("VerifierError", OWAVerifier.states.InternalError);
-OWAVerifier.states.ServerError = OWAVerifier.State("ServerError", OWAVerifier.states.NetworkError);
+ReceiptVerifier.states = {};
+ReceiptVerifier.states.VerificationIncomplete = ReceiptVerifier.State("VerificationIncomplete");
+ReceiptVerifier.states.NeedsInstall = ReceiptVerifier.State("NeedsInstall");
+ReceiptVerifier.states.NetworkError = ReceiptVerifier.State("NetworkError");
+ReceiptVerifier.states.NotInstalled = ReceiptVerifier.State("NotInstalled", ReceiptVerifier.states.NeedsInstall);
+ReceiptVerifier.states.NoReceipts = ReceiptVerifier.State("NoReceipts", ReceiptVerifier.states.NeedsInstall);
+ReceiptVerifier.states.NoValidReceipts = ReceiptVerifier.State("NoValidReceipts");
+ReceiptVerifier.states.OK = ReceiptVerifier.State("OK");
+ReceiptVerifier.states.OKCache = ReceiptVerifier.State("OKCache", ReceiptVerifier.states.OK);
+ReceiptVerifier.states.OKStaleCache = ReceiptVerifier.State("OKStaleCache", ReceiptVerifier.states.OKCache);
+ReceiptVerifier.states.InternalError = ReceiptVerifier.State("InternalError");
+ReceiptVerifier.states.MozAppsError = ReceiptVerifier.State("MozAppsError", ReceiptVerifier.states.InternalError);
+ReceiptVerifier.states.VerifierError = ReceiptVerifier.State("VerifierError", ReceiptVerifier.states.InternalError);
+ReceiptVerifier.states.ServerError = ReceiptVerifier.State("ServerError", ReceiptVerifier.states.NetworkError);
 
-OWAVerifier.states.toString = function () {
+ReceiptVerifier.states.toString = function () {
   var items = [];
   for (var i in this) {
     if (this.hasOwnProperty(i) && i != 'toString' && i != 'detail') {
@@ -103,21 +105,21 @@ OWAVerifier.states.toString = function () {
   return '{' + items.join(', ') + '}';
 };
 
-OWAVerifier.errors = {};
-OWAVerifier.errors.ReceiptFormatError = OWAVerifier.State("ReceiptFormatError");
-OWAVerifier.errors.ReceiptParseError = OWAVerifier.State("ReceiptParseError", OWAVerifier.errors.ReceiptFormatError);
-OWAVerifier.errors.InvalidFromStore = OWAVerifier.State("InvalidFromStore");
-OWAVerifier.errors.Refunded = OWAVerifier.State("Refunded");
-OWAVerifier.errors.RequestTimeout = OWAVerifier.State("RequestTimeout", OWAVerifier.states.ServerError);
-OWAVerifier.errors.ServerStatusError = OWAVerifier.State("ServerStatusError", OWAVerifier.states.ServerError);
-OWAVerifier.errors.InvalidServerResponse = OWAVerifier.State("InvalidServerResponse", OWAVerifier.states.ServerError);
-OWAVerifier.errors.InvalidReceiptIssuer = OWAVerifier.State("InvalidReceiptIssuer");
-OWAVerifier.errors.ConnectionError = OWAVerifier.State("ConnectionError", OWAVerifier.states.NetworkError);
-OWAVerifier.errors.ReceiptExpired = OWAVerifier.State("ReceiptExpired");
+ReceiptVerifier.errors = {};
+ReceiptVerifier.errors.ReceiptFormatError = ReceiptVerifier.State("ReceiptFormatError");
+ReceiptVerifier.errors.ReceiptParseError = ReceiptVerifier.State("ReceiptParseError", ReceiptVerifier.errors.ReceiptFormatError);
+ReceiptVerifier.errors.InvalidFromStore = ReceiptVerifier.State("InvalidFromStore");
+ReceiptVerifier.errors.Refunded = ReceiptVerifier.State("Refunded");
+ReceiptVerifier.errors.RequestTimeout = ReceiptVerifier.State("RequestTimeout", ReceiptVerifier.states.ServerError);
+ReceiptVerifier.errors.ServerStatusError = ReceiptVerifier.State("ServerStatusError", ReceiptVerifier.states.ServerError);
+ReceiptVerifier.errors.InvalidServerResponse = ReceiptVerifier.State("InvalidServerResponse", ReceiptVerifier.states.ServerError);
+ReceiptVerifier.errors.InvalidReceiptIssuer = ReceiptVerifier.State("InvalidReceiptIssuer");
+ReceiptVerifier.errors.ConnectionError = ReceiptVerifier.State("ConnectionError", ReceiptVerifier.states.NetworkError);
+ReceiptVerifier.errors.ReceiptExpired = ReceiptVerifier.State("ReceiptExpired");
 
-OWAVerifier.errors.toString = OWAVerifier.states.toString;
+ReceiptVerifier.errors.toString = ReceiptVerifier.states.toString;
 
-OWAVerifier.prototype = {
+ReceiptVerifier.prototype = {
 
   _validConstructorArguments: [
     'cacheStorage', 'cacheTimeout', 'requestTimeout',
@@ -125,9 +127,13 @@ OWAVerifier.prototype = {
     'logLevel'
   ],
 
+  defaultCacheTimeout: 1000 * 60 * 60 * 24, // One day
+  defaultRequestTimeout: 30000, // 30 seconds
+  defaultRefundWindow: 1000 * 60 * 40, // 40 minutes
+
   toString: function () {
     var self = this;
-    var s = '[OWAVerifier state: ' + this.state;
+    var s = '[ReceiptVerifier state: ' + this.state;
     if (this.products.length) {
       s += ' products: ' + this.products.map(function (i) {return i.url;}).join(', ');
     }
@@ -520,7 +526,7 @@ OWAVerifier.prototype = {
 
 };
 
-OWAVerifier.consoleLogger = function (level, message) {
+ReceiptVerifier.consoleLogger = function (level, message) {
   if (! console) {
     return;
   }
@@ -540,6 +546,10 @@ OWAVerifier.consoleLogger = function (level, message) {
 };
 
 
-OWAVerifier.prototype.states = OWAVerifier.states;
-OWAVerifier.prototype.errors = OWAVerifier.errors;
-OWAVerifier.prototype.consoleLogger = OWAVerifier.consoleLogger;
+ReceiptVerifier.prototype.states = ReceiptVerifier.states;
+ReceiptVerifier.prototype.errors = ReceiptVerifier.errors;
+ReceiptVerifier.prototype.consoleLogger = ReceiptVerifier.consoleLogger;
+
+exports.ReceiptVerifier = ReceiptVerifier;
+
+})(typeof exports == "undefined" ? (this.mozmarket = {}) : exports);
