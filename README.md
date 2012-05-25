@@ -40,9 +40,9 @@ The constructor takes several options:
 
 ### Methods
 
-The `.verify()` method is mostly what you'll use.  A couple others:
+The `mozmarket.verifyReceipts()` function is mostly what you'll use.  A couple methods you might want from the verifier object:
 
-**verifier.clearCache()**: Throws away everything in the cache.  This deletes some things from localStorage, but only keys that start with `receiptverifier.`
+**verifier.clearCache()**: Throws away everything in the cache.  This deletes some things from localStorage, but only keys that start with `receiptverifier.`  You'll probably want to use `verifier = new mozmarket.ReceiptVerifier(); verifier.clearCache(); verifier.verify(callback);` if you want to use this method.
 
 **verifier.parseReceipt(receipt)**: Returns the parsed form of the receipt.  See [the receipt specification](https://wiki.mozilla.org/Apps/WebApplicationReceipt) for more.
 
