@@ -7,29 +7,17 @@ It is particularly helpful for HTML-only applications (i.e., applications that d
 
 ## Using the library
 
-This library exposes one object, `mozmarket.ReceiptVerifier`.  You instantiate this with some options:
+This library exposes a function `mozmarket.verifyReceipts`, which you use like:
 
 ```javascript
-var verifier = new mozmarket.ReceiptVerifier({option: value});
+mozmarket.verifyReceipts(function (verifier) {
+  // Look at verifier.state to see how it went
+}, {optional options});
 ```
 
-It works fine with no options.  Once you've instantiated it, you run:
+The `verifier` is an instance of `mozmarket.ReceiptVerifier`.  The callback will be called regardless of success or failure, including if the application wasn't installed, and even if there is an exception in the library itself.
 
-```javascript
-verifier.verify(function (verifier) {
-  ... the verifier has done its work ...
-});
-```
-
-The callback you pass in will be called when the verification is complete, regardless of success or failure.  You then inspect the verifier to see what the result was:
-
-```javascript
-if (verifier.products.length) {
-  // at least one product was found in a receipt
-}
-```
-
-The example has a more detailed check.  The function call also checks things like whether the app is installed at all.
+The [example](#example) shows how to check the state.
 
 ### Options
 
@@ -65,8 +53,7 @@ The `.verify()` method is mostly what you'll use.  A couple others:
 To use this, you'd do something like:
 
 ```javascript
-var verifier = new mozmarket.ReceiptVerifier();
-verifier.verify(function (verifier) {
+mozmarket.verifyReceipts(function (verifier) {
   if (verifier.state instanceof verifier.states.NeedsInstall) {
     forcePurchase("You must install this app");
     return;
@@ -117,7 +104,7 @@ function logToServer(app, data) {
 
 ### States and Errors
 
-The `verifier.state` object can be an instance of one of these items; each is a property of `ReceiptVerifier.states`:
+The `verifier.state` object can be an instance of one of these items; each is a property of `verifier.states`:
 
 **OK**: everything went okay!
 
@@ -145,7 +132,7 @@ The `verifier.state` object can be an instance of one of these items; each is a 
 
 **VerifierError**: subclass of `InternalError`; an exception somewhere in the verifier code.
 
-There are also errors that can be assigned to individual receipts, contained in `ReceiptVerifier.errors`:
+There are also errors that can be assigned to individual receipts, enumerated in `verifier.errors`:
 
 **InvalidFromStore**: the store responded that the receipt is invalid. This may mean the store has no record of the receipt, doesn't recognize the signature, or some other state.
 
@@ -155,13 +142,13 @@ There are also errors that can be assigned to individual receipts, contained in 
 
 **InvalidReceiptIssuer**: the receipt was issued by a store not listed in your `installs_allowed_from` list.
 
-**ConnectionError**: subclass of `ReceiptVerifier.states.NetworkError`; happens when the connection to the server fails.
+**ConnectionError**: subclass of `verifier.states.NetworkError`; happens when the connection to the server fails.
 
-**RequestTimeout**: a subclass of `ReceiptVerifier.states.NetworkError`; the request timed out.  You can set `verifier.requestTimeout` to a millisecond value to control this.
+**RequestTimeout**: a subclass of `verifier.states.NetworkError`; the request timed out.  You can set `verifier.requestTimeout` to a millisecond value to control this.
 
-**ServerStatusError**: a subclass of `ReceiptVerifier.states.ServerError`; the server responded with a non-200 response.
+**ServerStatusError**: a subclass of `verifier.states.ServerError`; the server responded with a non-200 response.
 
-**InvalidServerResponse**: a subclass of `ReceiptVerifier.states.ServerError`; the server responded with a non-JSON response, or a JSON response that didn't contain a valid `status`.
+**InvalidServerResponse**: a subclass of `verifier.states.ServerError`; the server responded with a non-JSON response, or a JSON response that didn't contain a valid `status`.
 
 **ReceiptFormatError**: the receipt itself is invalid.  It might be badly formatted, or is missing required properties.
 

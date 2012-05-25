@@ -565,4 +565,9 @@ ReceiptVerifier.levels = ReceiptVerifier.prototype.levels;
 
 exports.ReceiptVerifier = ReceiptVerifier;
 
+exports.verifyReceipts = function verifyReceipt(callback, options) {
+  var verifier = new ReceiptVerifier(options);
+  verifier.verify(callback);
+};
+
 })(typeof exports == "undefined" ? (this.mozmarket = {}) : exports);
