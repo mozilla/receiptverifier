@@ -1,16 +1,71 @@
 # Open Web Apps Helper
 
-This is a (currently) small library to do helpful things for your [Mozilla Web Apps](https://www.mozilla.org/en-US/apps/partners/) app.
+This is a library to verify [Mozilla Web Apps](https://www.mozilla.org/en-US/apps/partners/) receipts.
 
-Right now it does validation of receipts, specifically targetted at HTML-only applications (i.e., applications where the server doesn't do anything but serve static files).
+It is particularly helpful for HTML-only applications (i.e., applications that don't have a smart server that can verify receipts).
 
 
 ## Using the library
 
+This library exposes one object, `mozmarket.ReceiptVerifier`.  You instantiate this with some options:
+
+```javascript
+var verifier = new mozmarket.ReceiptVerifier({option: value});
+```
+
+It works fine with no options.  Once you've instantiated it, you run:
+
+```javascript
+verifier.verify(function (verifier) {
+  ... the verifier has done its work ...
+});
+```
+
+The callback you pass in will be called when the verification is complete, regardless of success or failure.  You then inspect the verifier to see what the result was:
+
+```javascript
+if (verifier.products.length) {
+  // at least one product was found in a receipt
+}
+```
+
+The example has a more detailed check.  The function call also checks things like whether the app is installed at all.
+
+### Options
+
+The constructor takes several options:
+
+**installs_allowed_from**: This is a list of origins that are allowed to issue receipts.  If you don't give this, the verifier will read this value from the [manifest](https://developer.mozilla.org/en/Apps/Manifest).  This is a fine default, but if you've *stopped* a relationship with a store you should pay attention to this option: the manifest indicates what stores can install the app *now*, but you should still respect receipts issued by the store in the past.
+
+**requestTimeout**: The ReceiptVerifier will contact the store, and this may time out.  This is the time (in milliseconds) to wait.  It defaults to 30 seconds.
+
+**cacheTimeout**: The ReceiptVerifier will cache results (using `localStorage`).  This is how long (in milliseconds) that a cached result will be considered valid.
+
+**cacheStorage**: This defaults to `localStorage`.  You could potentially pass in a localStorage-like object in its place.  (If you have a use case for this, share with me, and maybe a more abstract interface is necessary.)  You can set this to null to stop caching. You shouldn't disable caching unless you implement it yourself somewhere else.
+
+**refundWindow**: After an app is purchased, there's a period when you can get a refund very easily.  On the Mozilla Marketplace this is 30 minutes.  So if we cache a result during that first 30 minutes, once the time has passed we should verify that again as there is a relatively high probability of a receipt becoming invalid during that time.  The value is in milliseconds, and defaults to 40 minutes (to round up the 30 minutes a bit).
+
+**onlog**: this is a function that will be called with log messages. The function is called like `verifier.onlog(level, message)`, with `level` one of the levels in `verifier.levels` (e.g., `verifier.level.INFO`).  There is a logger included that sends messages to the console.  Use `new mozmarket.ReceiptVerifier({onlog: mozmarket.ReceiptVerifier.consoleLogger})`
+
+**logLevel**: this is the level of messages to send to the logger function.  E.g., `new mozmarket.ReceiptVerifier({logLevel: "DEBUG", onlog: ...})`.  To see the levels, look at `mozmarket.ReceiptVerifier.levels`
+
+
+### Methods
+
+The `.verify()` method is mostly what you'll use.  A couple others:
+
+**verifier.clearCache()**: Throws away everything in the cache.  This deletes some things from localStorage, but only keys that start with `receiptverifier.`
+
+**verifier.parseReceipt(receipt)**: Returns the parsed form of the receipt.  See [the receipt specification](https://wiki.mozilla.org/Apps/WebApplicationReceipt) for more.
+
+**verifier.iterReceiptErrors(callback)**: Calls `callback(receipt, error)` for each error for an individual receipt.
+
+## Example
+
 To use this, you'd do something like:
 
 ```javascript
-var verifier = new OWAVerifier();
+var verifier = new mozmarket.ReceiptVerifier();
 verifier.verify(function (verifier) {
   if (verifier.state instanceof verifier.states.NeedsInstall) {
     forcePurchase("You must install this app");
@@ -62,9 +117,13 @@ function logToServer(app, data) {
 
 ### States and Errors
 
-The `verifier.state` object can be an instance of one of these items; each is a property of `OWAVerifier.states`:
+The `verifier.state` object can be an instance of one of these items; each is a property of `ReceiptVerifier.states`:
 
 **OK**: everything went okay!
+
+**OKCache**: subclass of `OK`; everything went okay, and we used some cached results to verify this.
+
+**OKStaleCache**: subclass of `OK`; everything didn't really go okay, there was some network error, but we had previously cached results of a past verification.  These cached items were too old, but were an acceptable fallback.  Or not acceptable, you can check for this state. The network errors will still be present in `verifier.receiptErrors`.
 
 **NoValidReceipts**: the application is installed, and has receipts, but none of the receipts are valid.  The receipts may be syntactically invalid, may be from a store that is not allowed, may be rejected by the store as invalid, or may be refunded.  Look to `verifier.receiptErrors` for details.
 
@@ -86,7 +145,7 @@ The `verifier.state` object can be an instance of one of these items; each is a 
 
 **VerifierError**: subclass of `InternalError`; an exception somewhere in the verifier code.
 
-There are also errors that can be assigned to individual receipts, contained in `OWAVerifier.errors`:
+There are also errors that can be assigned to individual receipts, contained in `ReceiptVerifier.errors`:
 
 **InvalidFromStore**: the store responded that the receipt is invalid. This may mean the store has no record of the receipt, doesn't recognize the signature, or some other state.
 
@@ -96,13 +155,13 @@ There are also errors that can be assigned to individual receipts, contained in 
 
 **InvalidReceiptIssuer**: the receipt was issued by a store not listed in your `installs_allowed_from` list.
 
-**ConnectionError**: subclass of `OWAVerifier.states.NetworkError`; happens when the connection to the server fails.
+**ConnectionError**: subclass of `ReceiptVerifier.states.NetworkError`; happens when the connection to the server fails.
 
-**RequestTimeout**: a subclass of `OWAVerifier.states.NetworkError`; the request timed out.  You can set `verifier.requestTimeout` to a millisecond value to control this.
+**RequestTimeout**: a subclass of `ReceiptVerifier.states.NetworkError`; the request timed out.  You can set `verifier.requestTimeout` to a millisecond value to control this.
 
-**ServerStatusError**: a subclass of `OWAVerifier.states.ServerError`; the server responded with a non-200 response.
+**ServerStatusError**: a subclass of `ReceiptVerifier.states.ServerError`; the server responded with a non-200 response.
 
-**InvalidServerResponse**: a subclass of `OWAVerifier.states.ServerError`; the server responded with a non-JSON response, or a JSON response that didn't contain a valid `status`.
+**InvalidServerResponse**: a subclass of `ReceiptVerifier.states.ServerError`; the server responded with a non-JSON response, or a JSON response that didn't contain a valid `status`.
 
 **ReceiptFormatError**: the receipt itself is invalid.  It might be badly formatted, or is missing required properties.
 
@@ -111,12 +170,12 @@ There are also errors that can be assigned to individual receipts, contained in 
 
 ## Testing the library
 
-The testing is a bit ad hoc, but it does exist.  To test the library get an app installed how you want (maybe in a refunded state, for instance, or install an invalid receipt, etc).  Then change your `/etc/hosts` to point the app's domain at your own machine.  Then open up `test.html`.  This will do some rough tests -- though of course it doesn't know what you intended to test, so it mostly displays the results.  You should then visually inspect them to make sure they match what you expect (no error, the error you expect, the products you expect, etc).
+There is a fairly complete test in `test.html`.  Be sure to check the library out with `git clone --recursive` or else after you've checked it out to use `git submodule update`; this brings in modules specifically used for testing.
+
+If you load the page the tests will run, and after a minute or so you should see a summary of results at the top.  The tests use [doctest.js](http://ianb.github.com/doctestjs).
 
 
 ## To Do
-
-* Express the use of a cached or stale cache value in the state (maybe subclasses of OK)
 
 * Include something like `logToServer` in the verifier itself.
 
@@ -124,8 +183,10 @@ The testing is a bit ad hoc, but it does exist.  To test the library get an app 
 
 * This requires [CORS](http://www.w3.org/TR/cors/), but the Marketplace doesn't have another way to access the validator. Investigate JSONP?
 
-* Consider encapsulating this more.  Might guard against at least the most trivial hacks.  Note that many attributes are exposed through the objects.
-
-* Better testing, of course.  More automated testing wouldn't be able to interact directly with the Marketplace though.
-
 * Do some checking of `installOrigin` and the receipt origin.
+
+* Some harder timeout for cached items, when a stale result is no longer okay.
+
+* Cache receipts longer once they age, as they are increasingly unlikely to become invalid.
+
+* Include something to send the receipts to the server for more secure verification.
