@@ -38,7 +38,7 @@ function handler(req) {
 }
 
 function makeReceipt(data) {
-  var data = mozmarket.ReceiptVerifier.prototype._base64urlencode(JSON.stringify(data));
+  var data = mozmarket.ReceiptVerifier.prototype.base64urlencode(JSON.stringify(data));
   return 'x~x.' + data + '.x';
 }
 
@@ -47,11 +47,11 @@ MockHttpRequest.prototype.toSource = function () {
 };
 
     </script>
-    <title>OWAValidator tests</title>
+    <title>mozmarket.ReceiptVerifier tests</title>
   </head>
   <body class="autodoctest">
 
-    <h1>OWAValidator tests</h1>
+    <h1>mozmarket.ReceiptVerifier tests</h1>
 
 <div class="test">
 <h2>Setup</h2>
@@ -267,6 +267,8 @@ $ writeln(ReceiptVerifier.states);
 {...}
 $ writeln(ReceiptVerifier.errors);
 {...}
+$ writeln(ReceiptVerifier.levels);
+{DEBUG, INFO, NOTIFY, WARN, ERROR}
 $ ReceiptVerifier({});
 Error: You forgot new
 $ new ReceiptVerifier({reqertTimeout: 10});

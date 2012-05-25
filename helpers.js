@@ -202,7 +202,7 @@ ReceiptVerifier.prototype = {
     var self = this;
     app.receipts.forEach(function (receipt) {
       self.log(self.levels.DEBUG, "Checking receipt " + receipt.substr(0, 4));
-      var result = self.checkCache(receipt, false);
+      var result = self._checkCache(receipt, false);
       if (result) {
         self.log(self.levels.INFO, "Got receipt (" + receipt.substr(0, 4) + ") status from cache: " + JSON.stringify(result));
         self._addReceiptError(receipt, new self.states.OKCache());
@@ -214,15 +214,15 @@ ReceiptVerifier.prototype = {
         return;
       }
       try {
-        self.verifyOneReceipt(app, receipt, function () {
+        self._verifyOneReceipt(app, receipt, function () {
           pending--;
           if (! pending) {
             self._finishVerification(onVerified);
           }
         });
       } catch (e) {
-        self.log(self.levels.ERROR, "Got error in verifyOneReceipt: " + e);
-        self._addReceiptError(receipt, new self.states.VerifierError("Exception in verifyOneReceipt: " + e, {exception: e}));
+        self.log(self.levels.ERROR, "Got error in _verifyOneReceipt: " + e);
+        self._addReceiptError(receipt, new self.states.VerifierError("Exception in _verifyOneReceipt: " + e, {exception: e}));
         // FIXME: potentially the callback could be called successfully, and exception still fire
         pending--;
         if (! pending) {
@@ -251,7 +251,7 @@ ReceiptVerifier.prototype = {
     }
   },
 
-  verifyOneReceipt: function (app, receipt, callback) {
+  _verifyOneReceipt: function (app, receipt, callback) {
     try {
       var parsed = this.parseReceipt(receipt);
     } catch (e) {
@@ -332,7 +332,7 @@ ReceiptVerifier.prototype = {
         self._addReceiptVerification(receipt, result);
         if (result.status == "ok") {
           // FIXME: maybe pending should be saved too, in case of future network error
-          self.saveResults(receipt, parsed, result);
+          self._saveResults(receipt, parsed, result);
         }
         callback();
         return;
@@ -376,7 +376,7 @@ ReceiptVerifier.prototype = {
   _addReceiptError: function (receipt, error) {
     this.receiptErrors[receipt] = error;
     if (error instanceof this.states.NetworkError) {
-      var result = this.checkCache(receipt, true);
+      var result = this._checkCache(receipt, true);
       if (result) {
         this.log("Got stale receipt (" + receipt.substr(0, 4) + ") status from cache: " + JSON.stringify(result));
         this._addReceiptVerification(receipt, result);
@@ -401,7 +401,7 @@ ReceiptVerifier.prototype = {
     this.products.push(this.parseReceipt(receipt).product);
   },
 
-  checkCache: function (receipt, networkFailure) {
+  _checkCache: function (receipt, networkFailure) {
     // FIXME: this should distinguish between getting a cached value when it's helpful
     // and when it's needed (due to network error)
     if (! this._cacheStorage) {
@@ -445,7 +445,7 @@ ReceiptVerifier.prototype = {
     }
   },
 
-  saveResults: function (receipt, parsedReceipt, result) {
+  _saveResults: function (receipt, parsedReceipt, result) {
     if (! this._cacheStorage) {
       return;
     }
@@ -461,7 +461,7 @@ ReceiptVerifier.prototype = {
     var bad = [];
     for (var i=0; i<this._cacheStorage.length; i++) {
       var key = this._cacheStorage.key(i);
-      if (key.substr(0, 4) == "app.") {
+      if (key.substr(0, 16) == "receiptverifier.") {
         bad.push(key);
       }
     }
@@ -471,7 +471,7 @@ ReceiptVerifier.prototype = {
   },
 
   _makeKey: function (receipt) {
-    return 'app.' + receipt;
+    return 'receiptverifier.' + receipt;
   },
 
   parseReceipt: function (receipt) {
@@ -481,12 +481,12 @@ ReceiptVerifier.prototype = {
     var majorParts = receipt.split('~');
     var dataParts = majorParts[1].split('.');
     var body = dataParts[1];
-    body = this._base64urldecode(body);
+    body = this.base64urldecode(body);
     body = JSON.parse(body);
     return body;
   },
 
-  _base64urldecode: function (s) {
+  base64urldecode: function (s) {
     s = s.replace(/-/g, '+'); // 62nd char of encoding
     s = s.replace(/_/g, '/'); // 63rd char of encoding
     switch (s.length % 4) { // Pad with trailing '='s
@@ -499,7 +499,7 @@ ReceiptVerifier.prototype = {
     return atob(s); // Standard base64 decoder
   },
 
-  _base64urlencode: function (s) {
+  base64urlencode: function (s) {
     s = btoa(s);
     s = s.replace(/\+/g, '-');
     s = s.replace(/\//g, '_');
@@ -545,10 +545,23 @@ ReceiptVerifier.consoleLogger = function (level, message) {
   }
 };
 
+ReceiptVerifier.prototype.levels.toString = function () {
+  var levels = [];
+  for (var i in this) {
+    if (this.hasOwnProperty(i) && i != 'toString') {
+      levels.push(i);
+    }
+  }
+  levels.sort(function (a, b) {
+    return this[a] < this[b] ? 1 : -1;
+  });
+  return '{' + levels.join(', ') + '}';
+};
 
 ReceiptVerifier.prototype.states = ReceiptVerifier.states;
 ReceiptVerifier.prototype.errors = ReceiptVerifier.errors;
 ReceiptVerifier.prototype.consoleLogger = ReceiptVerifier.consoleLogger;
+ReceiptVerifier.levels = ReceiptVerifier.prototype.levels;
 
 exports.ReceiptVerifier = ReceiptVerifier;
 
