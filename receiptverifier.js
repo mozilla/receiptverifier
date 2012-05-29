@@ -570,4 +570,4 @@ exports.verifyReceipts = function verifyReceipt(callback, options) {
   verifier.verify(callback);
 };
 
-})(typeof exports == "undefined" ? (this.mozmarket = {}) : exports);
+})(typeof exports == "undefined" ? (this.mozmarket ? this.mozmarket : this.mozmarket = {}) : exports);
