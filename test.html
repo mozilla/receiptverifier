@@ -38,7 +38,7 @@ function handler(req) {
 }
 
 function makeReceipt(data) {
-  var data = mozmarket.ReceiptVerifier.prototype.base64urlencode(JSON.stringify(data));
+  var data = mozmarket.receipts.Verifier.prototype.base64urlencode(JSON.stringify(data));
   return 'x~x.' + data + '.x';
 }
 
@@ -47,11 +47,11 @@ MockHttpRequest.prototype.toSource = function () {
 };
 
     </script>
-    <title>mozmarket.ReceiptVerifier tests</title>
+    <title>mozmarket.receipts.Verifier tests</title>
   </head>
   <body class="autodoctest">
 
-    <h1>mozmarket.ReceiptVerifier tests</h1>
+    <h1>mozmarket.receipts.Verifier tests</h1>
 
 <div class="test">
 <h2>Setup</h2>
@@ -80,7 +80,7 @@ $ server.start();
 <h2>Do the verification</h2>
 
 <pre class="doctest">
-$ ReceiptVerifier = mozmarket.ReceiptVerifier;
+$ Verifier = mozmarket.receipts.Verifier;
 $ v = null;
 $ r = navigator.mozApps.getSelf();
 > r.onsuccess = Spy('onsuccess', {wait: true});
@@ -92,9 +92,9 @@ $ writeln(r.result.receipts.length);
 $ writeln(r.result.receipts);
 [...]
 $ RESPONSE = {data: {status: "ok"}};
-$ owaArgs = {requestTimeout: 1000, logLevel: "INFO", onlog: ReceiptVerifier.consoleLogger}
+$ owaArgs = {requestTimeout: 1000, logLevel: "INFO", onlog: Verifier.consoleLogger}
 $ function verify(noClear, waitTime) {
->   v = new ReceiptVerifier(owaArgs);
+>   v = new Verifier(owaArgs);
 >   if (! noClear) {
 >     v.clearCache();
 >   }
@@ -106,7 +106,7 @@ $ function verify(noClear, waitTime) {
 $ verify();
 POST http://example.com/verifier
 Body: x~x...x
-verify([ReceiptVerifier state: [OK] products: http://whatever.com installed app: ...])
+verify([Verifier state: [OK] products: http://whatever.com installed app: ...])
 $ writeln(v.products);
 [{url: "http://whatever.com"}]
 $ writeln(v.receiptErrors);
@@ -121,26 +121,26 @@ $ RESPONSE = {data: {status: "invalid"}};
 $ verify();
 POST ...
 Body: ...
-verify([ReceiptVerifier state: [NoValidReceipts No receipts passed verification] Error(...): [InvalidFromStore ...] installed app: ...])
+verify([Verifier state: [NoValidReceipts No receipts passed verification] Error(...): [InvalidFromStore ...] installed app: ...])
 $ RESPONSE = {data: {status: "ok"}};
 $ appData.installData.receipts = ['xxxx'];
 $ verify();
-verify([ReceiptVerifier state: [NoValidReceipts No receipts passed verification] Error(...): [ReceiptParseError Error decoding JSON...] installed app: ...])
+verify([Verifier state: [NoValidReceipts No receipts passed verification] Error(...): [ReceiptParseError Error decoding JSON...] installed app: ...])
 $ appData.installData.receipts = [makeReceipt({})];
 $ verify();
-verify([ReceiptVerifier state: [NoValidReceipts ...] Error(...): [ReceiptFormatError No (or empty) iss field...]...])
+verify([Verifier state: [NoValidReceipts ...] Error(...): [ReceiptFormatError No (or empty) iss field...]...])
 $ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}})];
 $ appData.manifest.installs_allowed_from = ['http://store.example.com'];
 $ verify();
-verify([ReceiptVerifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer ...]...])
+verify([Verifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer ...]...])
 $ appData.manifest.installs_allowed_from = ['http://store.example.com'];
 $ verify();
-verify([ReceiptVerifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer Issuer (iss) of receipt is not a valid installer: http://example.com ...]...])
+verify([Verifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer Issuer (iss) of receipt is not a valid installer: http://example.com ...]...])
 $ appData.manifest.installs_allowed_from = ['*'];
 $ verify();
 POST ...
 Body: ...
-verify([ReceiptVerifier state: [OK]...])
+verify([Verifier state: [OK]...])
 </pre></div>
 
 <div class="test">
@@ -149,30 +149,30 @@ verify([ReceiptVerifier state: [OK]...])
 $ RESPONSE = {status: 0, data: ""};
 $ verify();
 ...
-verify([ReceiptVerifier state: [InvalidServerResponse Invalid JSON from server request: ... text: ""]...])
+verify([Verifier state: [InvalidServerResponse Invalid JSON from server request: ... text: ""]...])
 $ RESPONSE = {status: 404, data: "a bunch of text"};
 $ verify();
 ...
-verify([ReceiptVerifier state: [ServerStatusError Server responded with 404 to http://example.com/verifier ...]...])
+verify([Verifier state: [ServerStatusError Server responded with 404 to http://example.com/verifier ...]...])
 $ RESPONSE = {status: 500, data: "some other error text"};
 $ verify();
 ...
-verify([ReceiptVerifier state: [ServerStatusError Server responded with non-200 status: 500 ...]...])
+verify([Verifier state: [ServerStatusError Server responded with non-200 status: 500 ...]...])
 $ RESPONSE = {status: 200, data: "Please log into our dumb wifi"};
 $ verify();
 ...
-verify([ReceiptVerifier state: [InvalidServerResponse Invalid JSON from server...]...])
+verify([Verifier state: [InvalidServerResponse Invalid JSON from server...]...])
 $ RESPONSE = {status: 200, data: "null"};
 $ verify();
 ...
-verify([ReceiptVerifier state: [InvalidServerResponse Server did not respond with a JSON object (null)...]...])
+verify([Verifier state: [InvalidServerResponse Server did not respond with a JSON object (null)...]...])
 $ RESPONSE = {status: 200, data: {status: "refundido"}};
 $ verify();
 ...
-verify([ReceiptVerifier state: [InvalidServerResponse Store replied with unknown status: refundido...]...])
+verify([Verifier state: [InvalidServerResponse Store replied with unknown status: refundido...]...])
 $ server.handle = function () { /* look at us do nothing ... */ };
 $ verify(false, 2000);
-verify([ReceiptVerifier state: [RequestTimeout The request timed out after ? milliseconds...]...])
+verify([Verifier state: [RequestTimeout The request timed out after ? milliseconds...]...])
 </pre></div>
 
 <div class="test">
@@ -180,12 +180,12 @@ verify([ReceiptVerifier state: [RequestTimeout The request timed out after ? mil
 <pre class="doctest">
 $ function verifyCached(refundWindow) {
 >   RESPONSE.quiet = true;
->   v = new ReceiptVerifier(owaArgs);
+>   v = new Verifier(owaArgs);
 >   v.clearCache();
 >   var done = false;
 >   v.verify(function () {
 >     writeln('First completed:', v.state);
->     v2 = new ReceiptVerifier(owaArgs);
+>     v2 = new Verifier(owaArgs);
 >     if (refundWindow) {
 >       v2.refundWindow = refundWindow;
 >     }
@@ -220,59 +220,59 @@ Second completed: [NoValidReceipts No receipts passed verification]
 $ RESPONSE = {data: {status: "ok"}, quiet: true};
 $ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}, iat: Date.now()})];
 $ // A recently-fetched receipt won't be cached
-> v = new ReceiptVerifier(owaArgs);
+> v = new Verifier(owaArgs);
 $ v.clearCache();
 $ v.verify(Spy('verify', {wait: true}));
 POST http://example.com/verifier
-verify([ReceiptVerifier state: [OK]...])
+verify([Verifier state: [OK]...])
 $ wait(1000);
-$ v = new ReceiptVerifier(owaArgs);
+$ v = new Verifier(owaArgs);
 $ v.refundWindow = 1000;
 $ v.verify(Spy('verify', {wait: true}));
 POST http://example.com/verifier
-verify([ReceiptVerifier state: [OK]...])
+verify([Verifier state: [OK]...])
 $ // But now it won't need another cache check...
-$ v = new ReceiptVerifier(owaArgs);
+$ v = new Verifier(owaArgs);
 $ v.refundWindow = 1000;
 $ v.verify(Spy('verify', {wait: true}));
-verify([ReceiptVerifier state: [OKCache]...])
+verify([Verifier state: [OKCache]...])
 $ // Lastly, we can get a stale cache item if there's a network error
-$ vOk = new ReceiptVerifier(owaArgs);
+$ vOk = new Verifier(owaArgs);
 $ vOk.clearCache();
 $ vOk.verify(Spy('verify', {wait: true}));
 POST http://example.com/verifier
-verify([ReceiptVerifier state: [OK]...])
-$ vCache = new ReceiptVerifier(owaArgs);
+verify([Verifier state: [OK]...])
+$ vCache = new Verifier(owaArgs);
 $ vCache.verify(Spy('verify', {wait: true}));
-verify([ReceiptVerifier state: [OKCache]...])
+verify([Verifier state: [OKCache]...])
 $ RESPONSE = {data: "invalid", quiet: true};
-$ vStale = new ReceiptVerifier(owaArgs);
+$ vStale = new Verifier(owaArgs);
 $ vStale.cacheTimeout = 5;
 $ vStale.verify(Spy('verify', {wait: true}));
 POST http://example.com/verifier
-verify([ReceiptVerifier state: [OKStaleCache Used a stale cache because of network error: [InvalidServerResponse...])
-$ vForce = new ReceiptVerifier(owaArgs);
+verify([Verifier state: [OKStaleCache Used a stale cache because of network error: [InvalidServerResponse...])
+$ vForce = new Verifier(owaArgs);
 $ vForce.clearCache();
 $ vForce.cacheTimeout = 5;
 $ vForce.verify(Spy('verify', {wait: true}));
 POST http://example.com/verifier
-verify([ReceiptVerifier state: [InvalidServerResponse ...]...])
+verify([Verifier state: [InvalidServerResponse ...]...])
 $ // FIXME: I should test with a pending result (and figure out what it should do)
 
 </pre></div>
 
 <div class="test"><pre class="doctest">
 
-$ writeln(ReceiptVerifier.states);
+$ writeln(Verifier.states);
 {...}
-$ writeln(ReceiptVerifier.errors);
+$ writeln(Verifier.errors);
 {...}
-$ writeln(ReceiptVerifier.levels);
+$ writeln(Verifier.levels);
 {DEBUG, INFO, NOTIFY, WARN, ERROR}
-$ ReceiptVerifier({});
+$ Verifier({});
 Error: You forgot new
-$ new ReceiptVerifier({reqertTimeout: 10});
-Error: Illegal option to ReceiptVerifier({}): reqertTimeout
+$ new Verifier({reqertTimeout: 10});
+Error: Illegal option to Verifier({}): reqertTimeout
 
 </pre></div>
 

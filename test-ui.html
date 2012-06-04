@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="receiptverifier.js"></script>
+    <title>mozmarket.ReceiptVerifier UI</title>
+    <script>
+
+function runTest(state, error, options) {
+  options = options || {};
+  var names = ['allowNoInstall', 'selfInstallManifest', 'storeURL', 'ignoreInternalError', 'fatalInternalError', 'supportHTML'];
+  names.forEach(function (name) {
+    options[name] = value(name);
+  });
+  if (! options.supportHTML) {
+    options.supportHTML = 'email <a href="mailto:me@example.com">me@example.com</a>';
+  }
+  if (! options.storeURL) {
+    options.storeURL = 'https://marketplace.mozilla.org/apps/foobar';
+  }
+  var verifier = new mozmarket.ReceiptVerifier();
+  verifier.state = state;
+  if (error) {
+    verifier.receiptErrors['test'] = error;
+  }
+  var ui = new mozmarket.VerifierUI(options);
+  ui.respond(verifier);
+}
+
+var states = mozmarket.ReceiptVerifier.states;
+var errors = mozmarket.ReceiptVerifier.errors;
+
+function value(id) {
+  var el = document.getElementById(id);
+  if (el.type == 'checkbox') {
+    return el.checked;
+  }
+  return el.value;
+}
+
+    </script>
+
+<style>
+
+  a {
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: overline;
+  }
+  a:link {
+    color: #f00;
+  }
+  a:visited {
+    color: #ff0;
+  }
+  a:active {
+    color: #00f;
+  }
+
+</style>
+
+  </head>
+  <body class="autodoctest">
+
+    <h1>mozmarket.ReceiptVerifier UI</h1>
+
+<button type="button" onclick="runTest(new states.NotInstalled())">NotInstalled</button>
+<button type="button" onclick="runTest(new states.NoReceipts())">NoReceipts</button>
+<button type="button" onclick="runTest(new states.InternalError('something happened!'))">InternalError</button>
+<button type="button" onclick="runTest(new states.MozAppsError('something mozApps happened!'))">MozAppsError</button>
+<button type="button" onclick="runTest(new states.VerifierError('something verifiery happened!'))">VerifierError</button>
+<button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.InvalidFromStore('I hate your receipt'))">InvalidFromStore</button>
+<button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.ReceiptExpired('old pokey receipt'))">ReceiptExpired</button>
+<button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.Refunded('you are mean'))">Refunded</button>
+<button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.InvalidReceiptIssuer('Bad issuer', {iss: 'https://store.example.com'}))">InvalidReceiptIssuer</button>
+<button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.ReceiptFormatError('something wrong'))">ReceiptFormatError</button>
+<button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.ReceiptParseError('something more wrong'))">ReceiptParseError</button>
+<br>
+
+<label for=allowNoInstall>allowNoInstall: <input type=checkbox id=allowNoInstall></label>
+<label for=storeURL>storeURL: <input type=text value="https://marketplace.mozilla.org/app/foobar" id=storeURL></label>
+<label for=ignoreInternalError>ignoreInternalError: <input type=checkbox id=ignoreInternalError></label>
+<label for=fatalInternalError>fatalInternalError: <input type=checkbox id=fatalInternalError></label>
+<label for=supportHTML>supportHTML: <input type=text id=supportHTML value="email <a href=&quot;me@example.com&quot;>me@example.com</a>"></label>
+
+
+<p>
+<a href="http://asldfkjalskdjflaksdjf.com">Lorem ipsum dolor sit amet</a>, consectetur adipiscing elit. In auctor dui eu nisl pellentesque vulputate. Etiam sed ante tortor, non iaculis erat. Sed arcu dolor, eleifend in vulputate nec, aliquam vitae lorem. Mauris sit amet purus lectus. In id arcu odio, id dictum justo. Nam consequat placerat erat et tincidunt. Fusce accumsan, massa ac ultrices lobortis, dui nisl faucibus purus, quis pretium lectus orci vel turpis. Quisque ultrices pellentesque nunc, sit amet porta nunc euismod id. Morbi rutrum, nunc in commodo interdum, dolor leo adipiscing risus, vitae blandit erat diam a sapien. <a href="http://www.facebook.com">Donec vitae est sed quam posuere porta</a>.
+
+
+<p>
+Proin tempor vehicula iaculis. Maecenas vestibulum erat id urna tincidunt iaculis. Donec faucibus justo ac ipsum malesuada at placerat lorem iaculis. Aliquam id felis libero. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aliquam erat volutpat. Sed sit amet enim sapien. Sed elementum imperdiet eros, mollis lacinia massa pretium vitae. Aliquam vulputate interdum nunc sit amet rhoncus. Nulla odio purus, iaculis a sagittis at, malesuada vel ligula.
+
+<p>
+Vivamus turpis ante, tincidunt ac porta a, lobortis sed magna. Ut eget rhoncus lacus. Sed eget nisl risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed nulla massa. Quisque non ipsum nisl, id porttitor dolor. Suspendisse nec mi justo. Aliquam erat volutpat. Integer ante ipsum, porta ac scelerisque sed, bibendum quis dolor. Aliquam erat volutpat. Aliquam ornare blandit turpis, id sollicitudin tellus porttitor ac. Aliquam vehicula purus venenatis massa porta non laoreet felis hendrerit.
+
+<p>
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+
+<p>
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+
+<p>
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+
+<p>
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+
+<p>
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+
+<p>
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+Etiam dictum faucibus odio ac consequat. Nulla facilisi. In pretium orci ut nibh viverra placerat. Suspendisse mauris nunc, tincidunt eu sollicitudin ut, consequat ut massa. Nulla facilisi. Duis viverra, diam at auctor porta, ipsum est ultricies risus, rhoncus euismod dui libero et sem. Integer id augue id urna accumsan tincidunt. In auctor egestas metus, sit amet egestas nisl malesuada nec.
+
+<p>
+Pellentesque facilisis laoreet nulla et cursus. Mauris ac tellus non ipsum varius sollicitudin ut et sem. Aliquam enim augue, posuere ornare rutrum eget, varius dapibus enim. Aenean vel est quis mauris suscipit pharetra vel nec justo. Vestibulum quis eros a purus adipiscing volutpat. Vestibulum sed erat sit amet nisi tincidunt iaculis. Vestibulum pharetra mi ut purus lacinia sed ullamcorper nisi accumsan. Vestibulum pharetra adipiscing pharetra. Integer vitae lectus tortor, a imperdiet tortor. Quisque vitae dignissim dui. Sed vel lorem ligula.
+
+</body></html>

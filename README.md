@@ -5,17 +5,80 @@ This is a library to verify [Mozilla Web Apps](https://www.mozilla.org/en-US/app
 It is particularly helpful for HTML-only applications (i.e., applications that don't have a smart server that can verify receipts).
 
 
-## Using the library
+## Using the library the really quick way
 
-This library exposes a function `mozmarket.verifyReceipts`, which you use like:
+Below you'll see a description of the verifier, and how you can get the status of receipts, and then do something about that status.  But if you want to be really quick about it, you can use this:
 
 ```javascript
-mozmarket.verifyReceipts(function (verifier) {
+mozmarket.receipts.Prompter({
+  storeURL: "https://marketplace.mozilla.org/app/myapp",
+  supportHTML: '<a href="mailto:me@example.com">email me@example.com</a>',
+  verify: true
+});
+```
+
+This will run verification, and then throw up an error or prompt if something went wrong with that verification.
+
+In addition to the `verify: true` option, you can set several other options:
+
+**storeURL**: you must set this option.  This is the preferred installation page that you want to direct users to.  This probably is the detail page on a store, though you could point users to a self-installation page located on your own site, or really you can direct them anywhere (like to a page that offers the user many installation/store options).
+
+**supportHTML**: this is a snippet of HTML that tells the user how to contact you for support.  It is included in several error messages.
+
+**allowNoInstall**: default false.  If true, then users can continue to use the application even if the app isn't installed, though they will get a dialog encouraging them to install the application.
+
+**ignoreInternalError**: default false.  There are some internal errors that keep verification from happening; these typically aren't the fault of the user.  If true then these errors are completely ignored.  If false then the user gets an error message, but can close the message and continue to use the app.
+
+**fatalInternalError**: default false.  If true then when there is an internal message the user is completely blocked from using the application.
+
+### Prompter templates
+
+There is also actual text that is displayed to users, which is based on one of several templates.  These can be found in `mozmarket.receipts.Prompter.prototype.templates`.
+
+Each is a template based on [this recipe](http://ejohn.org/blog/javascript-micro-templating/) - instructions are put into `<% if/etc ... %>` or `<%= variable/expression %>.  You must use `<%= quote(text) %>` to safely include text.  You should look at the templates for examples.
+
+You can override these like:
+
+```javascript
+mozmarket.receipts.Prompter({
+  templates: {
+    internalError: "oops!"
+  }
+  ...
+});
+```
+
+These are all the templates:
+
+**internalError**: when there's an internal error, and you haven't set `ignoreInternalError`.
+
+**fatalInternalError**: only applies if you used the `fatalInternalError` option.
+
+**storeInstall**: this tells the user they must install the app from the store.
+
+**refunded**: this happens when the user made a purchase, but got a refund for that purchase.
+
+**invalidReceiptIssuer**: this is when the receipt was issued by a store you don't have a relationship (that is not listed in `installs_allowed_from` in your application manifest).
+
+**invalidFromStore**: the store reported the receipt as invalid. Probably a simple reinstallation is all that is necessary.
+
+**receiptFormatError**: the receipt itself is malformed.  Probably a reinstallation will fix this.
+
+**genericError**: this fallback error shouldn't happen.  But it could?
+
+To see an example of how these options interact, look at [test-ui.html](test-ui.html).
+
+## Using the library
+
+This library (besides `Prompter`) exposes a function `mozmarket.receipts.verify()`, which you use like:
+
+```javascript
+mozmarket.receipts.verify(function (verifier) {
   // Look at verifier.state to see how it went
 }, {optional options});
 ```
 
-The `verifier` is an instance of `mozmarket.ReceiptVerifier`.  The callback will be called regardless of success or failure, including if the application wasn't installed, and even if there is an exception in the library itself.
+The `verifier` is an instance of `mozmarket.receipts.Verifier`.  The callback will be called regardless of success or failure, including if the application wasn't installed, and even if there is an exception in the library itself.
 
 The [example](#example) shows how to check the state.
 
@@ -25,24 +88,24 @@ The constructor takes several options:
 
 **installs_allowed_from**: This is a list of origins that are allowed to issue receipts.  If you don't give this, the verifier will read this value from the [manifest](https://developer.mozilla.org/en/Apps/Manifest).  This is a fine default, but if you've *stopped* a relationship with a store you should pay attention to this option: the manifest indicates what stores can install the app *now*, but you should still respect receipts issued by the store in the past.
 
-**requestTimeout**: The ReceiptVerifier will contact the store, and this may time out.  This is the time (in milliseconds) to wait.  It defaults to 30 seconds.
+**requestTimeout**: The Verifier will contact the store, and this may time out.  This is the time (in milliseconds) to wait.  It defaults to 30 seconds.
 
-**cacheTimeout**: The ReceiptVerifier will cache results (using `localStorage`).  This is how long (in milliseconds) that a cached result will be considered valid.
+**cacheTimeout**: The Verifier will cache results (using `localStorage`).  This is how long (in milliseconds) that a cached result will be considered valid.
 
 **cacheStorage**: This defaults to `localStorage`.  You could potentially pass in a localStorage-like object in its place.  (If you have a use case for this, share with me, and maybe a more abstract interface is necessary.)  You can set this to null to stop caching. You shouldn't disable caching unless you implement it yourself somewhere else.
 
 **refundWindow**: After an app is purchased, there's a period when you can get a refund very easily.  On the Mozilla Marketplace this is 30 minutes.  So if we cache a result during that first 30 minutes, once the time has passed we should verify that again as there is a relatively high probability of a receipt becoming invalid during that time.  The value is in milliseconds, and defaults to 40 minutes (to round up the 30 minutes a bit).
 
-**onlog**: this is a function that will be called with log messages. The function is called like `verifier.onlog(level, message)`, with `level` one of the levels in `verifier.levels` (e.g., `verifier.level.INFO`).  There is a logger included that sends messages to the console.  Use `new mozmarket.ReceiptVerifier({onlog: mozmarket.ReceiptVerifier.consoleLogger})`
+**onlog**: this is a function that will be called with log messages. The function is called like `verifier.onlog(level, message)`, with `level` one of the levels in `verifier.levels` (e.g., `verifier.level.INFO`).  There is a logger included that sends messages to the console.  Use `new mozmarket.receipts.Verifier({onlog: mozmarket.receipts.Verifier.consoleLogger})`
 
-**logLevel**: this is the level of messages to send to the logger function.  E.g., `new mozmarket.ReceiptVerifier({logLevel: "DEBUG", onlog: ...})`.  To see the levels, look at `mozmarket.ReceiptVerifier.levels`
+**logLevel**: this is the level of messages to send to the logger function.  E.g., `new mozmarket.receipts.Verifier({logLevel: "DEBUG", onlog: ...})`.  To see the levels, look at `mozmarket.receipts.Verifier.levels`
 
 
 ### Methods
 
-The `mozmarket.verifyReceipts()` function is mostly what you'll use.  A couple methods you might want from the verifier object:
+The `mozmarket.receipts.verify()` function is mostly what you'll use. A couple methods you might want from the verifier object:
 
-**verifier.clearCache()**: Throws away everything in the cache.  This deletes some things from localStorage, but only keys that start with `receiptverifier.`  You'll probably want to use `verifier = new mozmarket.ReceiptVerifier(); verifier.clearCache(); verifier.verify(callback);` if you want to use this method.
+**verifier.clearCache()**: Throws away everything in the cache.  This deletes some things from localStorage, but only keys that start with `receiptverifier.`  You'll probably want to use `verifier = new mozmarket.receipts.Verifier(); verifier.clearCache(); verifier.verify(callback);` if you want to use this method.
 
 **verifier.parseReceipt(receipt)**: Returns the parsed form of the receipt.  See [the receipt specification](https://wiki.mozilla.org/Apps/WebApplicationReceipt) for more.
 
@@ -53,7 +116,7 @@ The `mozmarket.verifyReceipts()` function is mostly what you'll use.  A couple m
 To use this, you'd do something like:
 
 ```javascript
-mozmarket.verifyReceipts(function (verifier) {
+mozmarket.receipts.verify(function (verifier) {
   if (verifier.state instanceof verifier.states.NeedsInstall) {
     forcePurchase("You must install this app");
     return;
@@ -177,3 +240,9 @@ If you load the page the tests will run, and after a minute or so you should see
 * Cache receipts longer once they age, as they are increasingly unlikely to become invalid.
 
 * Include something to send the receipts to the server for more secure verification.
+
+* Make sure we validate that the receipt is for *this* app, not some other app.
+
+* A hook from the prompter to shut down the app (so you can't *just* remove the overlay element and use the app).
+
+* Some server flow where a failure is sent to the server so it can require successful verification before sending the full assets again (probably by setting a cookie).
