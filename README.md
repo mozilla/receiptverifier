@@ -4,6 +4,7 @@ This is a library to verify [Mozilla Web Apps](https://www.mozilla.org/en-US/app
 
 It is particularly helpful for HTML-only applications (i.e., applications that don't have a smart server that can verify receipts).
 
+If you use the library, please tell me and let me inform you of updates by [putting your name into this form](https://docs.google.com/spreadsheet/viewform?formkey=dEdMQW55V0xUekxBODdVdjB5c3pKUHc6MQ). Thanks!
 
 ## Using the library the really quick way
 
@@ -246,3 +247,5 @@ If you load the page the tests will run, and after a minute or so you should see
 * A hook from the prompter to shut down the app (so you can't *just* remove the overlay element and use the app).
 
 * Some server flow where a failure is sent to the server so it can require successful verification before sending the full assets again (probably by setting a cookie).
+
+* Set a user-agent string on the verify check, that does something like `navigator.userAgent + '; receiptverifier/1.1'`
