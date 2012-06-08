@@ -20,7 +20,7 @@ var Verifier = function (options) {
   this.receiptVerifications = {};
   this._cacheStorage = options.cacheStorage || localStorage;
   this.cacheTimeout = options.cacheTimeout || this.defaultCacheTimeout;
-  this.state = this.states.VerificationIncomplete('.verify() has not been called');
+  this.state = new this.states.VerificationIncomplete('.verify() has not been called');
   this.requestTimeout = options.requestTimeout || this.defaultRequestTimeout;
   this.refundWindow = options.refundWindow || this.defaultRefundWindow;
   this.installs_allowed_from = options.installs_allowed_from || undefined;
@@ -195,6 +195,11 @@ Verifier.prototype = {
 
   verifyReceipts: function (app, onVerified) {
     if ((! app.receipts) || (! app.receipts.length)) {
+      if (app.receipts === undefined) {
+        this.log(self.levels.ERROR,
+          "The .receipts property of the app object is undefined (app: "
+          + JSON.stringify(app) + ")");
+      }
       this.state = new this.states.NoReceipts("No receipts were found or installed");
       return;
     }
