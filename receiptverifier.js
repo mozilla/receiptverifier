@@ -4,8 +4,16 @@ if (! exports.receipts) {
   exports.receipts = {};
 }
 
+var noNewObject = (function () { return this; })();
+
+if (typeof atob === 'undefined' && typeof Buffer !== 'undefined') {
+  var atob = function (s) {
+    return new Buffer(s, 'base64').toString('utf8');
+  }
+}
+
 var Verifier = function (options) {
-  if (this == (typeof window !== 'undefined' ? window : global)) {
+  if (this === noNewObject) {
     throw 'You forgot new';
   }
   options = options || {};
@@ -49,7 +57,7 @@ Verifier.State = function (name, superclass) {
     return this;
   }
   function NewState(detail, attrs) {
-    if (this === (typeof window !== 'undefined' ? window : global)) {
+    if (this === noNewObject) {
       throw 'You forgot new';
     }
     this.detail = detail;
@@ -509,11 +517,7 @@ Verifier.prototype = {
       case 3: s += "="; break;
       default: throw "Illegal base64url string!";
     }
-    if (typeof atob !== 'undefined') {
-      return atob(s); // Standard base64 decoder
-    } else {
-      return new Buffer(s, 'base64').toString('utf8'); // Node.js base64 decoder
-    }
+    return atob(s);
   },
 
   base64urlencode: function (s) {
