@@ -5,7 +5,7 @@ if (! exports.receipts) {
 }
 
 var Verifier = function (options) {
-  if (this == window) {
+  if (this == (typeof window !== 'undefined' ? window : global)) {
     throw 'You forgot new';
   }
   options = options || {};
@@ -18,7 +18,7 @@ var Verifier = function (options) {
   this.products = [];
   this.receiptErrors = {};
   this.receiptVerifications = {};
-  this._cacheStorage = options.cacheStorage || localStorage;
+  this._cacheStorage = options.cacheStorage || (typeof localStorage !== 'undefined' ? localStorage : undefined);
   this.cacheTimeout = options.cacheTimeout || this.defaultCacheTimeout;
   this.state = new this.states.VerificationIncomplete('.verify() has not been called');
   this.requestTimeout = options.requestTimeout || this.defaultRequestTimeout;
@@ -49,7 +49,7 @@ Verifier.State = function (name, superclass) {
     return this;
   }
   function NewState(detail, attrs) {
-    if (this === window) {
+    if (this === (typeof window !== 'undefined' ? window : global)) {
       throw 'You forgot new';
     }
     this.detail = detail;
@@ -286,6 +286,10 @@ Verifier.prototype = {
       callback();
       return;
     }
+    // Node.js
+    if (typeof XMLHttpRequest === 'undefined') {
+      XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
+    }
     var req = new XMLHttpRequest();
     var self = this;
     var timeout = null;
@@ -505,7 +509,11 @@ Verifier.prototype = {
       case 3: s += "="; break;
       default: throw "Illegal base64url string!";
     }
-    return atob(s); // Standard base64 decoder
+    if (typeof atob !== 'undefined') {
+      return atob(s); // Standard base64 decoder
+    } else {
+      return new Buffer(s, 'base64').toString('utf8'); // Node.js base64 decoder
+    }
   },
 
   base64urlencode: function (s) {
@@ -641,7 +649,7 @@ var $ = (function(win, doc, undefined) {
     };
 
     return pico;
-})(window, document);
+})(typeof window !== 'undefined' ? window : global, typeof document !== 'undefined' ? document : undefined);
 
 
 function Prompter(options) {
