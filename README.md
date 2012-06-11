@@ -8,16 +8,16 @@ If you use the library, please tell me and let me inform you of updates by [putt
 
 ## Table of Contents
 
-1. https://github.com/mozilla/receiptverifier#using-the-library-the-really-quick-way
-  * https://github.com/mozilla/receiptverifier#prompter-templates
-2. https://github.com/mozilla/receiptverifier#using-the-library-in-the-browser-client-side
-  * https://github.com/mozilla/receiptverifier#options
-  * https://github.com/mozilla/receiptverifier#methods
-3. https://github.com/mozilla/receiptverifier#example
-  * https://github.com/mozilla/receiptverifier#states-and-errors
-4. https://github.com/mozilla/receiptverifier#using-the-library-in-nodejs-server-side
-5. https://github.com/mozilla/receiptverifier#testing-the-library
-6. https://github.com/mozilla/receiptverifier#to-do
+1. [Using the library the really quick way](https://github.com/mozilla/receiptverifier#using-the-library-the-really-quick-way)
+  * [Prompter templates](https://github.com/mozilla/receiptverifier#prompter-templates)
+2. [Using the library in the browser (Client Side)](https://github.com/mozilla/receiptverifier#using-the-library-in-the-browser-client-side)
+  * [Options](https://github.com/mozilla/receiptverifier#options)
+  * [Methods](https://github.com/mozilla/receiptverifier#methods)
+3. [Example](https://github.com/mozilla/receiptverifier#example)
+  * [States and Errors](https://github.com/mozilla/receiptverifier#states-and-errors)
+4. [Using the library in Node.js (Server Side)](https://github.com/mozilla/receiptverifier#using-the-library-in-nodejs-server-side)
+5. [Testing the library](https://github.com/mozilla/receiptverifier#testing-the-library)
+6. [To Do](https://github.com/mozilla/receiptverifier#to-do)
 
 ## Using the library the really quick way
 
