@@ -1,14 +1,23 @@
 # Open Web Apps Helper
 
-## Table of Contents
-* auto-gen TOC:
-{:toc}
-
 This is a library to verify [Mozilla Web Apps](https://www.mozilla.org/en-US/apps/partners/) receipts.
 
 It is particularly helpful for HTML-only applications (i.e., applications that don't have a smart server that can verify receipts), but can also be used server side with Node.js.
 
 If you use the library, please tell me and let me inform you of updates by [putting your name into this form](https://docs.google.com/spreadsheet/viewform?formkey=dEdMQW55V0xUekxBODdVdjB5c3pKUHc6MQ). Thanks!
+
+## Table of Contents
+
+1. https://github.com/mozilla/receiptverifier#using-the-library-the-really-quick-way
+  * https://github.com/mozilla/receiptverifier#prompter-templates
+2. https://github.com/mozilla/receiptverifier#using-the-library-in-the-browser-client-side
+  * https://github.com/mozilla/receiptverifier#options
+  * https://github.com/mozilla/receiptverifier#methods
+3. https://github.com/mozilla/receiptverifier#example
+  * https://github.com/mozilla/receiptverifier#states-and-errors
+4. https://github.com/mozilla/receiptverifier#using-the-library-in-nodejs-server-side
+5. https://github.com/mozilla/receiptverifier#testing-the-library
+6. https://github.com/mozilla/receiptverifier#to-do
 
 ## Using the library the really quick way
 
