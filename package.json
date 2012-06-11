@@ -1,0 +1,46 @@
+{
+  "author": {
+    "name": "Ian Bicking",
+    "email": "ibicking@mozilla.com"
+  },
+  "contributors": [
+    {
+      "name": "Nick Desaulniers",
+      "email": "ndesaulniers@mozilla.com"
+    }
+  ],
+  "name": "receiptverifier",
+  "description": "Verify Open Web App Receipts",
+  "version": "0.0.3",
+  "homepage": "https://github.com/mozilla/receiptverifier",
+  "keywords": [
+    "open",
+    "web",
+    "app",
+    "receipt",
+    "verification",
+    "verify"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mozilla/receiptverifier.git"
+  },
+  "main": "./lib/receiptverifier.js",
+  "licenses": [
+    {
+      "type": "MPL 2.0",
+      "url": "http://www.mozilla.org/MPL/2.0/"
+    }
+  ],
+  "dependencies": {
+    "xmlhttprequest": "1.4.0"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": ">=0.4.0"
+  },
+  "directories": {
+    "example": "./example"
+  }
+}
