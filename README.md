@@ -2,9 +2,22 @@
 
 This is a library to verify [Mozilla Web Apps](https://www.mozilla.org/en-US/apps/partners/) receipts.
 
-It is particularly helpful for HTML-only applications (i.e., applications that don't have a smart server that can verify receipts).
+It is particularly helpful for HTML-only applications (i.e., applications that don't have a smart server that can verify receipts), but can also be used server side with Node.js.
 
 If you use the library, please tell me and let me inform you of updates by [putting your name into this form](https://docs.google.com/spreadsheet/viewform?formkey=dEdMQW55V0xUekxBODdVdjB5c3pKUHc6MQ). Thanks!
+
+## Table of Contents
+
+1. [Using the library the really quick way](https://github.com/mozilla/receiptverifier#using-the-library-the-really-quick-way)
+  * [Prompter templates](https://github.com/mozilla/receiptverifier#prompter-templates)
+2. [Using the library in the browser (Client Side)](https://github.com/mozilla/receiptverifier#using-the-library-in-the-browser-client-side)
+  * [Options](https://github.com/mozilla/receiptverifier#options)
+  * [Methods](https://github.com/mozilla/receiptverifier#methods)
+3. [Example](https://github.com/mozilla/receiptverifier#example)
+  * [States and Errors](https://github.com/mozilla/receiptverifier#states-and-errors)
+4. [Using the library in Node.js (Server Side)](https://github.com/mozilla/receiptverifier#using-the-library-in-nodejs-server-side)
+5. [Testing the library](https://github.com/mozilla/receiptverifier#testing-the-library)
+6. [To Do](https://github.com/mozilla/receiptverifier#to-do)
 
 ## Using the library the really quick way
 
@@ -69,7 +82,7 @@ These are all the templates:
 
 To see an example of how these options interact, look at [test-ui.html](test-ui.html).
 
-## Using the library
+## Using the library in the browser (Client Side)
 
 This library (besides `Prompter`) exposes a function `mozmarket.receipts.verify()`, which you use like:
 
@@ -218,6 +231,21 @@ There are also errors that can be assigned to individual receipts, enumerated in
 
 **ReceiptParseError**: subclass of `ReceiptFormatError`; the receipt is not valid [JWT](http://tools.ietf.org/html/draft-jones-json-web-token-10).  This should only happen if the store that issued the receipt is simply broken, or the receipt was corrupted.
 
+## Using the library in Node.js (Server Side)
+
+This library is Node.js compatible.  It is registered in the Node Package
+Manager's (NPM) registry at:
+[npmjs.org](http://search.npmjs.org/#/receiptverifier)
+
+You can install the node package with the command:
+`npm install receiptverifier`
+
+An example server using the receiptverifier package can be found in the
+node_modules/receiptverifier/example directory.  That example just logs
+verifications to the console, but you could log verifications to files or
+database records.  The inject code provides the ability to forward your existing
+installed application records to your server to test it.  See the comments in
+those files for more documentation.
 
 ## Testing the library
 
