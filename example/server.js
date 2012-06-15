@@ -12,11 +12,6 @@ try {
 var app = express.createServer();
 // Note the relative path because we are in the example directory.
 var Verifier = require('../receiptverifier').receipts.Verifier;
-/* Here we set the console.log function to be used for logging.
- * Remove the options hash from the constructor if this added logging is 
- * unnecessary.  Or you could have your custom logging function to write to
- * files. */
-var myVerifier = new Verifier({ onlog: console.log });
 
 /* This block is needed to parse the HTTP POST body.  It also needs to go
  * before any routes are defined! */
@@ -36,6 +31,12 @@ app.get('/manifest.webapp', function (req, res) {
 });
 
 app.post('/', function (req, res) {
+  /* Here we set the console.log function to be used for logging.
+   * Remove the options hash from the constructor if this added logging is 
+   * unnecessary.  Or you could have your custom logging function to write to
+   * files. */
+  var myVerifier = new Verifier({ onlog: console.log });
+  
   // Log the request body.
   //console.log(req.body);
   myVerifier.verifyReceipts(req.body, function (verifier) {
