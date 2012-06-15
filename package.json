@@ -11,7 +11,7 @@
   ],
   "name": "receiptverifier",
   "description": "Verify Open Web App Receipts",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "homepage": "https://github.com/mozilla/receiptverifier",
   "keywords": [
     "open",
@@ -25,7 +25,7 @@
     "type": "git",
     "url": "git://github.com/mozilla/receiptverifier.git"
   },
-  "main": "./lib/receiptverifier.js",
+  "main": "receiptverifier.js",
   "licenses": [
     {
       "type": "MPL 2.0",
