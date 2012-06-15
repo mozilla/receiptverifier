@@ -11,7 +11,7 @@
   ],
   "name": "receiptverifier",
   "description": "Verify Open Web App Receipts",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "homepage": "https://github.com/mozilla/receiptverifier",
   "keywords": [
     "open",
