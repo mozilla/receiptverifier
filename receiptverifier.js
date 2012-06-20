@@ -11,7 +11,7 @@ if (! exports.receipts) {
 var noNewObject = (function () { return this; })();
 
 if (typeof atob === 'undefined' && typeof Buffer !== 'undefined') {
-  var atob = function (s) {
+  atob = function (s) {
     return new Buffer(s, 'base64').toString('utf8');
   }
 }
