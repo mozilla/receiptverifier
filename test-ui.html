@@ -7,12 +7,12 @@
   <head>
     <meta charset="UTF-8">
     <script src="receiptverifier.js"></script>
-    <title>mozmarket.ReceiptVerifier UI</title>
+    <title>mozmarket.receipts.Prompter</title>
     <script>
 
 function runTest(state, error, options) {
   options = options || {};
-  var names = ['allowNoInstall', 'selfInstallManifest', 'storeURL', 'ignoreInternalError', 'fatalInternalError', 'supportHTML'];
+  var names = ['allowNoInstall', 'storeURL', 'ignoreInternalError', 'fatalInternalError', 'supportHTML'];
   names.forEach(function (name) {
     options[name] = value(name);
   });
@@ -22,20 +22,23 @@ function runTest(state, error, options) {
   if (! options.storeURL) {
     options.storeURL = 'https://marketplace.mozilla.org/apps/foobar';
   }
-  var verifier = new mozmarket.ReceiptVerifier();
+  var verifier = new mozmarket.receipts.Verifier();
   verifier.state = state;
   if (error) {
     verifier.receiptErrors['test'] = error;
   }
-  var ui = new mozmarket.VerifierUI(options);
+  var ui = new mozmarket.receipts.Prompter(options);
   ui.respond(verifier);
 }
 
-var states = mozmarket.ReceiptVerifier.states;
-var errors = mozmarket.ReceiptVerifier.errors;
+var states = mozmarket.receipts.Verifier.states;
+var errors = mozmarket.receipts.Verifier.errors;
 
 function value(id) {
   var el = document.getElementById(id);
+  if (! el) {
+    throw 'No element with the id ' + id;
+  }
   if (el.type == 'checkbox') {
     return el.checked;
   }
@@ -67,7 +70,7 @@ function value(id) {
   </head>
   <body class="autodoctest">
 
-    <h1>mozmarket.ReceiptVerifier UI</h1>
+    <h1>mozmarket.receipts.Prompter UI</h1>
 
 <button type="button" onclick="runTest(new states.NotInstalled())">NotInstalled</button>
 <button type="button" onclick="runTest(new states.NoReceipts())">NoReceipts</button>
