@@ -13,7 +13,7 @@ var noNewObject = (function () { return this; })();
 if (typeof atob === 'undefined' && typeof Buffer !== 'undefined') {
   atob = function (s) {
     return new Buffer(s, 'base64').toString('utf8');
-  }
+  };
 }
 
 var Verifier = function (options) {
@@ -661,7 +661,7 @@ var $ = (function(win, doc, undefined) {
 
 
 function Prompter(options) {
-  if (this == window) {
+  if (this === window || (typeof mozmarket != 'undefined' && this == mozmarket.receipts)) {
     return new Prompter(options);
   }
   options = options || {};
