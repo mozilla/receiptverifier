@@ -60,18 +60,18 @@ Verifier.State = function (name, superclass) {
   if (name === undefined) {
     return this;
   }
-  function NewState(detail, attrs) {
+  var NewState = function (detail, attrs) {
     if (this === noNewObject) {
       throw 'You forgot new';
     }
     this.detail = detail;
     _extend(this, attrs);
-  }
+  };
   if (superclass === undefined) {
     superclass = Verifier.State;
   }
   NewState.prototype = new superclass();
-  NewState.name = name;
+  NewState.className = name;
   NewState.prototype.name = name;
   return NewState;
 };
