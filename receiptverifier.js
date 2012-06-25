@@ -577,8 +577,9 @@ Verifier.prototype.levels.toString = function () {
       levels.push(i);
     }
   }
+  var self = this;
   levels.sort(function (a, b) {
-    return this[a] < this[b] ? 1 : -1;
+    return self[a] < self[b] ? 1 : -1;
   });
   return '{' + levels.join(', ') + '}';
 };
