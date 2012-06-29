@@ -83,6 +83,7 @@ function value(id) {
 <button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.InvalidReceiptIssuer('Bad issuer', {iss: 'https://store.example.com'}))">InvalidReceiptIssuer</button>
 <button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.ReceiptFormatError('something wrong'))">ReceiptFormatError</button>
 <button type="button" onclick="runTest(new states.NoValidReceipts(), new errors.ReceiptParseError('something more wrong'))">ReceiptParseError</button>
+<button type="button" onclick="runTest(new states.MozAppsNotSupported())">mozApps not supported</button>
 <br>
 
 <label for=allowNoInstall>allowNoInstall: <input type=checkbox id=allowNoInstall></label>

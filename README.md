@@ -193,6 +193,8 @@ The `verifier.state` object can be an instance of one of these items; each is a 
 
 **NetworkError**: some network error occurred that kept validation from completing.  That is, a receipt seemed okay but we weren't able to contact the server to verify if.  This will happen when the user agent is offline.
 
+**MozAppsNotSupported**: the `navigator.mozApps` API is not supported by this client.  The app can't be "installed" on this browser.
+
 **ServerError**: subclass of `NetworkError`; the server did something wrong.  This might be an invalid response from the server, or a wifi login in the way, or the server is down, etc.  Like a network error, it's not the user's fault!
 
 **VerificationIncomplete**: this is the state until the verification actually completes.

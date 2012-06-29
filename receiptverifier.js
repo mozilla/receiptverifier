@@ -98,6 +98,7 @@ Verifier.State.prototype.toString = function () {
 Verifier.states = {};
 Verifier.states.VerificationIncomplete = Verifier.State("VerificationIncomplete");
 Verifier.states.NeedsInstall = Verifier.State("NeedsInstall");
+Verifier.states.MozAppsNotSupported = Verifier.State("MozAppsNotSupported");
 Verifier.states.NetworkError = Verifier.State("NetworkError");
 Verifier.states.NotInstalled = Verifier.State("NotInstalled", Verifier.states.NeedsInstall);
 Verifier.states.NoReceipts = Verifier.State("NoReceipts", Verifier.states.NeedsInstall);
@@ -180,9 +181,14 @@ Verifier.prototype = {
   },
 
   verify: function (onVerified) {
-    this.state = new this.states.VerificationIncomplete(".verify() has not completed");
-    var result = navigator.mozApps.getSelf();
     var self = this;
+    this.state = new this.states.VerificationIncomplete(".verify() has not completed");
+    if (! navigator.mozApps) {
+      this.state = new this.states.MozAppsNotSupported("navigator.mozApps does not exist");
+      onVerified(self);
+      return;
+    }
+    var result = navigator.mozApps.getSelf();
     result.onsuccess = function () {
       try {
         self.app = this.result || null;
@@ -724,7 +730,8 @@ Prompter.prototype = {
     invalidReceiptIssuer: 'You purchased this application from <%= error.iss %> which is not a store we have a relationship with.  Please either <a href="<%= quote(storeURL) %>">re-purchase the application</a> or contact support: <%= supportHTML %>',
     invalidFromStore: 'The store reports that your purchase receipt is invalid.  Please <a href="<%= quote(storeURL) %>">visit the store to reinstall the application</a>.',
     receiptFormatError: 'Your purchase receipt is malformed.  Please <a href="<%= quote(storeURL) %>">visit the store to reinstall the application</a>.',
-    genericError: 'An error has occurred.  <a href="<%= quote(storeURL) %>">Reinstalling the application</a> may fix this problem.  If not please contact support: <%= supportHTML %>'
+    genericError: 'An error has occurred.  <a href="<%= quote(storeURL) %>">Reinstalling the application</a> may fix this problem.  If not please contact support: <%= supportHTML %>',
+    mozAppsNotSupported: 'This browser or device does not support the Marketplace Apps system.'
   },
 
   respond: function (verifier) {
@@ -740,6 +747,10 @@ Prompter.prototype = {
     }
     if (verifier.state instanceof verifier.states.OK ||
         verifier.state instanceof verifier.states.NetworkError) {
+      return;
+    }
+    if (verifier.state instanceof verifier.states.MozAppsNotSupported) {
+      this.handleMozAppsNotSupported(verifier);
       return;
     }
     if (verifier.state instanceof verifier.states.InternalError) {
@@ -764,11 +775,17 @@ Prompter.prototype = {
         }
       });
       this.handleReceiptError(verifier, bestReason);
+      return;
     }
     if (window.console && console.log) {
       console.log('Unexpected state: ' + verifier.state);
     }
     throw 'Unexpected state in verifier: ' + verifier.state;
+  },
+
+  handleMozAppsNotSupported: function (verifier) {
+    var blocking = ! this.allowNoInstall;
+    this.display(this.render(this.templates.mozAppsNotSupported), blocking);
   },
 
   handleInternalError: function (verifier) {

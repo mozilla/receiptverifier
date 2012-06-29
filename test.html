@@ -267,6 +267,18 @@ $ // FIXME: I should test with a pending result (and figure out what it should d
 
 <div class="test"><pre class="doctest">
 
+$ oldMozApps = navigator.mozApps;
+$ navigator.mozApps = null;
+$ verifier = new Verifier(owaArgs);
+$ verifier.verify(Spy('verify', {wait: true}));
+verify([Verifier state: [MozAppsNotSupported navigator.mozApps does not exist]])
+$ navigator.mozApps = oldMozApps;
+...
+
+</pre></div>
+
+<div class="test"><pre class="doctest">
+
 $ writeln(Verifier.states);
 {...}
 $ writeln(Verifier.errors);
