@@ -56,6 +56,33 @@ function _extend(obj, attrs) {
   }
 };
 
+function _forceForEach(obj, callback) {
+  // Workaround for: https://bugzilla.mozilla.org/show_bug.cgi?id=769830
+  if (obj.forEach) {
+    obj.forEach(callback);
+    return;
+  }
+  // Otherwise we treat it as an object with keys that need to be iterated over
+  for (var i in obj) {
+    if (obj.hasOwnProperty(i)) {
+      callback(obj[i]);
+    }
+  }
+}
+
+function _forceIndexOf(obj, value) {
+  // Workaround for: https://bugzilla.mozilla.org/show_bug.cgi?id=769830
+  if (obj.indexOf) {
+    return obj.indexOf(value);
+  }
+  for (var i in obj) {
+    if (obj[i] == value) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 Verifier.State = function (name, superclass) {
   if (name === undefined) {
     return this;
@@ -227,7 +254,7 @@ Verifier.prototype = {
     }
     var pending = app.receipts.length;
     var self = this;
-    app.receipts.forEach(function (receipt) {
+    _forceForEach(app.receipts, function (receipt) {
       self.log(self.levels.DEBUG, "Checking receipt " + receipt.substr(0, 4));
       var result = self._checkCache(receipt, false);
       if (result) {
@@ -293,8 +320,8 @@ Verifier.prototype = {
       return;
     }
     // FIXME: somewhat crude checking, case-sensitive:
-    if (this.installs_allowed_from && this.installs_allowed_from.indexOf(iss) == -1 && this.installs_allowed_from.indexOf("*") == -1) {
-      this._addReceiptError(receipt, new this.errors.InvalidReceiptIssuer("Issuer (iss) of receipt is not a valid installer: " + iss, {iss: iss}));
+    if (this.installs_allowed_from && _forceIndexOf(this.installs_allowed_from, iss) == -1 && _forceIndexOf(this.installs_allowed_from, "*") == -1) {
+      this._addReceiptError(receipt, new this.errors.InvalidReceiptIssuer("Issuer (iss) of receipt is not a valid installer: " + iss, {iss: iss, installs_allowed_from: this.installs_allowed_from}));
       callback();
       return;
     }
