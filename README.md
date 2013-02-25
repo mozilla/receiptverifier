@@ -236,18 +236,30 @@ There are also errors that can be assigned to individual receipts, enumerated in
 ## Using the library in Node.js (Server Side)
 
 This library is Node.js compatible.  It is registered in the Node Package
-Manager's (NPM) registry at:
-[npmjs.org](http://search.npmjs.org/#/receiptverifier)
+Manager's (NPM) registry as
+[receiptverifier](https://npmjs.org/package/receiptverifier) so you can
+install it like this:
 
-You can install the node package with the command:
-`npm install receiptverifier`
+    npm install receiptverifier
 
-An example server using the receiptverifier package can be found in the
-node_modules/receiptverifier/example directory.  That example just logs
-verifications to the console, but you could log verifications to files or
-database records.  The inject code provides the ability to forward your existing
-installed application records to your server to test it.  See the comments in
-those files for more documentation.
+To verify receipts on the server you have to JSONify the App object
+and pass it to a custom validation URL that checks the receipts.
+Take a look at the ``node_modules/receiptverifier/example`` directory
+to see a complete Node.js app that validates receipts. You can run it like:
+
+    cd example
+    npm install
+    npm start
+
+However, you'll need to host it on a public IP address if you want to test
+out real receipt handling using the
+[Firefox Marketplace](https://marketplace.firefox.com/).
+You can test it on
+[Firefox Marketplace Dev](https://marketplace-dev.allizom.org/).
+
+Take a look at ``example/server.js`` to see how the custom validation URL
+works. See ``example/www/js/app.js`` to see how client side App objects
+are JSONified and sent to the server.
 
 ## Testing the library
 

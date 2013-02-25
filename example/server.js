@@ -6,56 +6,74 @@ try {
   var express = require('express');
 } catch (err) {
   console.log('Error: This example requires the express package. Please run:');
-  console.log('npm install express');
+  console.log('npm install');
   process.exit(1);
 }
-var app = express.createServer();
-// Note the relative path because we are in the example directory.
-var Verifier = require('../receiptverifier').receipts.Verifier;
+var Verifier = require('receiptverifier').receipts.Verifier;
+var app = express();
+var media = __dirname + '/www';
 
-/* This block is needed to parse the HTTP POST body.  It also needs to go
- * before any routes are defined! */
-app.configure(function () {
+/*
+ * Array of absolute URLs to stores that can issue receipts for your app.
+ *
+ * Example:
+ * installs_allowed_from = ['https://marketplace.firefox.com',
+ *                          'https://marketplace-dev.allizom.org']
+ *
+ * If you don't specify this then the value of the app manifest
+ * will be fetched from the client running your app.
+ * If you rely on the client
+ * then an attacker could hack the client code and issue a fake
+ * receipt at a fake domain with a verifier URL that does nothing.
+ *
+ * */
+var installs_allowed_from;
+
+
+app.configure(function() {
+  app.use(express.logger({format: 'dev'}));
+  // You must call this before any routes to parse the HTTP POST body.
   app.use(express.bodyParser());
 });
 
-/* Here we can use express to serve files as well.  Note how you must set the
- * content type to 'application/x-web-app-manifest+json' for webapp
- * manifests! */
 app.get('/', function (req, res) {
-  res.sendfile('index.html');
-});
-app.get('/manifest.webapp', function (req, res) {
-  res.header('Content-Type', 'application/x-web-app-manifest+json');
-  res.sendfile('manifest.webapp');
+  res.sendfile(media + '/app.html');
 });
 
 app.post('/', function (req, res) {
-  /* Here we set the console.log function to be used for logging.
-   * Remove the options hash from the constructor if this added logging is 
-   * unnecessary.  Or you could have your custom logging function to write to
-   * files. */
-  var myVerifier = new Verifier({ onlog: console.log });
-  
-  // Log the request body.
-  //console.log(req.body);
-  myVerifier.verifyReceipts(req.body, function (verifier) {
-    
-    // Log the verifier object after verification.
-    //console.log(verifier);
-    // Log the result for the verification.
-    //console.log(verifier.state.toString());
-    if (verifier.state.toString() === '[OK]') {
-      console.log('Verification success!');
-      res.send('{ receiptState: ' + verifier.state.toString() + '}',
-        {'Content-Type': 'application/json'}, 200);
-    } else {
-      console.log('Verification failure!');
-      res.send('{ receiptState: ' + verifier.state.toString() + '}',
-        {'Content-Type': 'application/json'}, 400);
-    }
+  var store = new Verifier({
+    onlog: console.log,
+    // If this is set it will override the same value from the
+    // app manifest. Use this to protect against fraud (see above).
+    installs_allowed_from: installs_allowed_from
   });
+  var receipts;
+  try {
+    receipts = req.body.receipts;
+  } catch (er) {
+    console.log('Error checking receipts: ' + er.toString());
+    res.send('BAD_REQUEST', 400);
+  }
+  if (receipts) {
+    store.verifyReceipts(req.body, function (verifier) {
+      if (verifier.state.toString() === '[OK]') {
+        console.log('Verification success!');
+        res.send('OK', 200);
+      } else {
+        console.log('Verification failure!');
+        res.send('PAYMENT_REQUIRED', 402);
+      }
+    });
+  }
 });
 
-app.listen(3000);
-console.log('server running on port 3000');
+
+// Serve static files such as /www/img/*, /www/manifest.webapp, etc.
+app.configure(function() {
+  app.use(express.static(media));
+});
+
+
+var port = process.env['PORT'] || 3000;
+app.listen(port);
+console.log('Listening on port ' + port);

@@ -7,11 +7,15 @@
     {
       "name": "Nick Desaulniers",
       "email": "ndesaulniers@mozilla.com"
+    },
+    {
+      "name": "Kumar McMillan",
+      "email": "kumar.mcmillan@gmail.com"
     }
   ],
   "name": "receiptverifier",
   "description": "Verify Open Web App Receipts",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "homepage": "https://github.com/mozilla/receiptverifier",
   "keywords": [
     "open",
