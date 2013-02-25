@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "name": "Example Paid App",
+  "description": "This is a paid app to demo the receipt verifier",
+  "icons": {
+    "512": "/img/icon.png"
+  },
+  "launch_path": "/",
+  "installs_allowed_from": [
+    "https://marketplace.firefox.com",
+    "https://marketplace.mozilla.org",
+    "https://marketplace.allizom.org",
+    "https://marketplace-dev.allizom.org",
+    "http://localhost:8002"
+  ]
+}
