@@ -54,7 +54,7 @@ function _extend(obj, attrs) {
       }
     }
   }
-};
+}
 
 function _forceForEach(obj, callback) {
   // Workaround for: https://bugzilla.mozilla.org/show_bug.cgi?id=769830
@@ -104,6 +104,7 @@ Verifier.State = function (name, superclass) {
 };
 
 Verifier.State.prototype.toString = function () {
+  var repr;
   var s = '[' + this.name;
   if (this.detail) {
     s += ' ' + this.detail;
@@ -111,9 +112,9 @@ Verifier.State.prototype.toString = function () {
   for (var i in this) {
     if (this.hasOwnProperty(i) && i != 'detail') {
       if (typeof this[i] == "object" && this[i] && this[i].toSource) {
-        var repr = this[i].toSource();
+        repr = this[i].toSource();
       } else {
-        var repr = JSON.stringify(this[i]);
+        repr = JSON.stringify(this[i]);
       }
       s += ' ' + i + ': ' + repr;
     }
@@ -306,8 +307,9 @@ Verifier.prototype = {
   },
 
   _verifyOneReceipt: function (app, receipt, callback) {
+    var parsed;
     try {
-      var parsed = this.parseReceipt(receipt);
+      parsed = this.parseReceipt(receipt);
     } catch (e) {
       this._addReceiptError(receipt, new this.errors.ReceiptParseError("Error decoding JSON: " + e, {exception: e}));
       callback();
@@ -372,8 +374,9 @@ Verifier.prototype = {
         callback();
         return;
       }
+      var result;
       try {
-        var result = JSON.parse(req.responseText);
+        result = JSON.parse(req.responseText);
       } catch (e) {
         self._addReceiptError(receipt, new self.errors.InvalidServerResponse("Invalid JSON from server", {request: req, text: req.responseText}));
         callback();
@@ -649,13 +652,14 @@ var $ = (function(win, doc, undefined) {
 
         ret.on = function(type, handler) {
             ret.each(function() {
-                on(this, type, handler)
+                on(this, type, handler);
             });
             return ret;
         };
 
 
         ret.css = function(o) {
+            var p;
             if (typeof o == 'object') {
                 for (p in o) {
                     ret.each(function() {
@@ -669,6 +673,7 @@ var $ = (function(win, doc, undefined) {
 
 
         ret.attr = function(o) {
+            var p;
             if (typeof o == 'object') {
                 for (p in o) {
                     ret.each(function() {
@@ -682,7 +687,7 @@ var $ = (function(win, doc, undefined) {
 
 
         return ret;
-    };
+    }
 
     var on = pico.on = function(el, type, handler) {
         el.addEventListener(type, function(e) {
@@ -695,14 +700,15 @@ var $ = (function(win, doc, undefined) {
 
 
 function Prompter(options) {
-  if (this === window || (typeof mozmarket != 'undefined' && this == mozmarket.receipts)) {
+  var i;
+  if (! this instanceof Prompter) {
     return new Prompter(options);
   }
   options = options || {};
   this.overlay = null;
-  for (var i in options) {
-    if (options.hasOwnProperty(i) && i != 'verifier'
-        && i != 'templates' && i != 'verify' && i != 'verifierOptions') {
+  for (i in options) {
+    if (options.hasOwnProperty(i) && i != 'verifier' &&
+        i != 'templates' && i != 'verify' && i != 'verifierOptions') {
       if (this[i] === undefined) {
         throw 'Unknown option: ' + i;
       }
@@ -712,10 +718,10 @@ function Prompter(options) {
   if (options.templates) {
     var old = this.templates;
     this.templates = {};
-    for (var i in old) {
+    for (i in old) {
       this.templates[i] = old[i];
     }
-    for (var i in options.templates) {
+    for (i in options.templates) {
       if (options.templates.hasOwnProperty(i)) {
         this.templates[i] = options.templates[i];
       }
@@ -737,7 +743,7 @@ function Prompter(options) {
       self.respond(verifier);
     });
   }
-};
+}
 
 Prompter.prototype = {
 
@@ -835,17 +841,18 @@ Prompter.prototype = {
   },
 
   handleReceiptError: function (verifier, error) {
+    var template;
     this.error = error;
     if (error instanceof verifier.errors.Refunded) {
-      var template = this.templates.refunded;
+      template = this.templates.refunded;
     } else if (error instanceof verifier.errors.InvalidReceiptIssuer) {
-      var template = this.templates.invalidReceiptIssuer;
+      template = this.templates.invalidReceiptIssuer;
     } else if (error instanceof verifier.errors.InvalidFromStore) {
-      var template = this.templates.invalidFromStore;
+      template = this.templates.invalidFromStore;
     } else if (error instanceof verifier.errors.ReceiptFormatError) {
-      var template = this.templates.receiptFormatError;
+      template = this.templates.receiptFormatError;
     } else {
-      var template = this.templates.genericError;
+      template = this.templates.genericError;
     }
     var message = this.render(template);
     this.display(message, ! this.allowNoInstall);
@@ -1002,14 +1009,15 @@ Prompter.prototype = {
   _templateCache: {},
 
   render: function (template, data) {
+    var fn;
     // From http://ejohn.org/blog/javascript-micro-templating/
     data = data || this;
     // Figure out if we're getting a template, or if we need to
     // load the template - and be sure to cache the result.
     if (this._templateCache[template]) {
-      var fn = this._templateCache[template];
+      fn = this._templateCache[template];
     } else {
-      var fn =
+      fn =
         // Generate a reusable function that will serve as a template
         // generator (and which will be cached).
         new Function("obj",
@@ -1026,8 +1034,8 @@ Prompter.prototype = {
             .replace(/\t=(.*?)%>/g, "',$1,'")
             .split("\t").join("');")
             .split("%>").join("p.push('")
-            .split("\r").join("\\'")
-        + "');}return p.join('');");
+            .split("\r").join("\\'") +
+          "');}return p.join('');");
       this._templateCache[template] = fn;
     }
     return fn(data);
