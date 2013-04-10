@@ -43,7 +43,7 @@ In addition to the `verify: true` option, you can set several other options:
 
 **ignoreInternalError**: default false.  There are some internal errors that keep verification from happening; these typically aren't the fault of the user.  If true then these errors are completely ignored.  If false then the user gets an error message, but can close the message and continue to use the app.
 
-**fatalInternalError**: default false.  If true then when there is an internal message the user is completely blocked from using the application.
+**fatalInternalError**: default false.  If true then when there is an internal error the user is completely blocked from using the application.
 
 ### Prompter templates
 
@@ -113,6 +113,8 @@ The constructor takes several options:
 **onlog**: this is a function that will be called with log messages. The function is called like `verifier.onlog(level, message)`, with `level` one of the levels in `verifier.levels` (e.g., `verifier.level.INFO`).  There is a logger included that sends messages to the console.  Use `new mozmarket.receipts.Verifier({onlog: mozmarket.receipts.Verifier.consoleLogger})`
 
 **logLevel**: this is the level of messages to send to the logger function.  E.g., `new mozmarket.receipts.Verifier({logLevel: "DEBUG", onlog: ...})`.  To see the levels, look at `mozmarket.receipts.Verifier.levels`
+
+**requireSameOrigin**: this requires that the `iss` (issuer) is the same origin as the `verify` URL (where the receipt is verified).  This defaults to false.  If on, then marketplaces must have their issue and verifier on the same origin (meaning same domain, port, and scheme).
 
 
 ### Methods
