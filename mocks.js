@@ -8,7 +8,7 @@ function DOMRequest() {
   this.error = null;
   this.result = undefined;
   this.readyState = "pending";
-};
+}
 
 DOMRequest.prototype.fireSuccess = function (result) {
   this.result = result;
@@ -28,7 +28,7 @@ DOMRequest.prototype.fireError = function (errorName) {
 
 DOMRequest.prototype.toString = function () {
   return '[object DOMRequest]';
-}
+};
 
 var mockMozApps = {
   _repo: {},
@@ -48,8 +48,9 @@ var mockMozApps = {
         pending.fireError("NETWORK_ERROR");
         return;
       }
+      var manifest;
       try {
-        var manifest = JSON.parse(req.responseText);
+        manifest = JSON.parse(req.responseText);
       } catch (e) {
         pending.fireError("MANIFEST_PARSE_ERROR");
         return;
@@ -72,6 +73,10 @@ var mockMozApps = {
     };
     var app = new Application(this, appData);
     pending.fireSuccess(app);
+  },
+
+  _clear: function () {
+    this._repo = {};
   },
 
   _getOrigin: function (url) {
@@ -104,7 +109,7 @@ function Application(repo, data) {
   this.origin = data.origin;
   this.installTime = data.installTime;
   this.receipts = data.installData && data.installData.receipts;
-};
+}
 
 Application.prototype = {
   launch: function () {
