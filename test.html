@@ -96,7 +96,7 @@ $ writeln(r.result.receipts.length);
 $ writeln(r.result.receipts);
 [...]
 $ RESPONSE = {data: {status: "ok"}};
-$ owaArgs = {requestTimeout: 1000, logLevel: "INFO", onlog: Verifier.consoleLogger, requireSameOrigin: true}
+$ owaArgs = {requestTimeout: 1000, logLevel: "INFO", onlog: Verifier.consoleLogger}
 $ function verify(noClear, waitTime) {
 >   v = new Verifier(owaArgs);
 >   if (! noClear) {
@@ -268,13 +268,13 @@ $ // FIXME: I should test with a pending result (and figure out what it should d
 <h2>And now same-origin!</h2>
 
 <div class="test"><pre class="doctest">
-$ badReceipt = makeReceipt({iss: "http://example.com", verify: "http://foo.example.com/verifier", product: {url: "http://whatever.com"}});
+$ badReceipt = makeReceipt({iss: "http://example.com", verify: "http://evil.com/verifier", product: {url: "http://whatever.com"}});
 $ mockMozApps._clear();
 $ mockMozApps._installManifest(thisOrigin + '/manifest.webapp', {name: "my app"}, thisOrigin, {receipts: [badReceipt]}, pending);
 [object DOMRequest].onsuccess([object Event])
 $ vSame = new Verifier(owaArgs);
 $ vSame.verify(Spy('verify', {wait: true}));
-verify([Verifier state: [NoValidReceipts...] Error(...): [OriginMismatch Verifier origin does not match issuer origin...])
+verify([Verifier state: [NoValidReceipts...] Error(...): [VerifyDomainMismatch Verifier domain is not the same (or a subdomain) of the issuer domain...])
 </pre></div>
 
 <div class="test"><pre class="doctest">

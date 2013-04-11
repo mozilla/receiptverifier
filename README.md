@@ -114,8 +114,6 @@ The constructor takes several options:
 
 **logLevel**: this is the level of messages to send to the logger function.  E.g., `new mozmarket.receipts.Verifier({logLevel: "DEBUG", onlog: ...})`.  To see the levels, look at `mozmarket.receipts.Verifier.levels`
 
-**requireSameOrigin**: this requires that the `iss` (issuer) is the same origin as the `verify` URL (where the receipt is verified).  This defaults to false.  If on, then marketplaces must have their issue and verifier on the same origin (meaning same domain, port, and scheme).
-
 
 ### Methods
 

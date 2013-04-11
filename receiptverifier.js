@@ -36,7 +36,6 @@ var Verifier = function (options) {
   this.requestTimeout = options.requestTimeout || this.defaultRequestTimeout;
   this.refundWindow = options.refundWindow || this.defaultRefundWindow;
   this.installs_allowed_from = options.installs_allowed_from || undefined;
-  this.requireSameOrigin = options.requireSameOrigin || false;
   this.onlog = options.onlog;
   if (options.logLevel) {
     if (typeof options.logLevel == "string") {
@@ -84,31 +83,18 @@ function _forceIndexOf(obj, value) {
   return -1;
 }
 
-function sameOrigin(url1, url2) {
-  var regex = /^(https?):\/\/([a-zA-Z0-9_\-]+)(:[0-9]+)?/;
-  url1 = url1.toLowerCase();
-  url2 = url2.toLowerCase();
-  var match1 = regex.exec(url1);
-  var match2 = regex.exec(url2);
-  if (! (match1 && match2)) {
-    // Not a valid url
-    // FIXME: signal error instead of just returning false?
+function isSubdomain(base, subdomain) {
+  /* Returns true if subdomain is the same as base, or a subdomain of it,
+     irregardless of protocol or port */
+  base = base.toLowerCase().replace(/^https?:\/\//, "");
+  subdomain = subdomain.toLowerCase().replace(/^https?:\/\//, "");
+  base = base.replace(/[:\/].*/, "");
+  subdomain = subdomain.replace(/[:\/].*/, "");
+  if (base.length > subdomain.length) {
     return false;
   }
-  var proto1 = match1[1];
-  var proto2 = match2[1];
-  if (proto1 !== proto2) {
-    return false;
-  }
-  var port1 = match1[3] || (proto1 == "http" ? "80" : "443");
-  var port2 = match2[3] || (proto2 == "http" ? "80" : "443");
-  if (port1 !== port2) {
-    return false;
-  }
-  if (match1[2] != match2[2]) {
-    return false;
-  }
-  return true;
+  var trailer = subdomain.substr(subdomain.length - base.length, base.length);
+  return trailer == base;
 }
 
 Verifier.State = function (name, superclass) {
@@ -189,7 +175,7 @@ Verifier.errors.InvalidServerResponse = Verifier.State("InvalidServerResponse", 
 Verifier.errors.InvalidReceiptIssuer = Verifier.State("InvalidReceiptIssuer");
 Verifier.errors.ConnectionError = Verifier.State("ConnectionError", Verifier.states.NetworkError);
 Verifier.errors.ReceiptExpired = Verifier.State("ReceiptExpired");
-Verifier.errors.OriginMismatch = Verifier.State("OriginMismatch");
+Verifier.errors.VerifyDomainMismatch = Verifier.State("VerifyDomainMismatch");
 
 Verifier.errors.toString = Verifier.states.toString;
 
@@ -198,7 +184,7 @@ Verifier.prototype = {
   _validConstructorArguments: [
     'cacheStorage', 'cacheTimeout', 'requestTimeout',
     'refundWindow', 'installs_allowed_from', 'onlog',
-    'logLevel', 'requireSameOrigin'
+    'logLevel'
   ],
 
   defaultCacheTimeout: 1000 * 60 * 60 * 24, // One day
@@ -362,8 +348,8 @@ Verifier.prototype = {
       callback();
       return;
     }
-    if (this.requireSameOrigin && ! sameOrigin(verify, parsed.iss)) {
-      this._addReceiptError(receipt, new this.errors.OriginMismatch("Verifier origin does not match issuer origin", {parsed: parsed, iss: parsed.iss, verify: parsed.verify}));
+    if (! isSubdomain(parsed.iss, verify)) {
+      this._addReceiptError(receipt, new this.errors.VerifyDomainMismatch("Verifier domain is not the same (or a subdomain) of the issuer domain", {parsed: parsed, iss: parsed.iss, verify: parsed.verify}));
       callback();
       return;
     }
