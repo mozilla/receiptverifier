@@ -68,7 +68,7 @@ $ doctest.defaultTimeout = 20000;
 $ mockMozApps.monkeypatch();
 $ thisOrigin = URLParse(location.href).originOnly().toString();
 $ pending = new DOMRequest();
-$ receipt = makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}});
+$ receipt = makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}});
 $ pending.onsuccess = Spy('onsuccess', {wait: true});
 > mockMozApps._installManifest(thisOrigin + '/manifest.webapp', {name: "my app"}, thisOrigin, {receipts: [receipt]}, pending);
 [object DOMRequest].onsuccess([object Event])
@@ -130,10 +130,13 @@ $ RESPONSE = {data: {status: "ok"}};
 $ appData.installData.receipts = ['xxxx'];
 $ verify();
 verify([Verifier state: [NoValidReceipts No receipts passed verification] Error(...): [ReceiptParseError Error decoding JSON...] installed app: ...])
-$ appData.installData.receipts = [makeReceipt({})];
+$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt"})];
 $ verify();
 verify([Verifier state: [NoValidReceipts ...] Error(...): [ReceiptFormatError No (or empty) iss field...]...])
-$ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}})];
+$ appData.installData.receipts = [makeReceipt({typ: "test-receipt"})];
+$ verify();
+verify([Verifier state: [NoValidReceipts ...] Error(...): [WrongType Wrong receipt type...]...])
+$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}})];
 $ appData.manifest.installs_allowed_from = ['http://store.example.com'];
 $ verify();
 verify([Verifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer ...]...])
@@ -222,7 +225,7 @@ First completed: [NoValidReceipts No receipts passed verification]
 POST http://example.com/verifier
 Second completed: [NoValidReceipts No receipts passed verification]
 $ RESPONSE = {data: {status: "ok"}, quiet: true};
-$ appData.installData.receipts = [makeReceipt({iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}, iat: Date.now()})];
+$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}, iat: Date.now()})];
 $ // A recently-fetched receipt won't be cached
 > v = new Verifier(owaArgs);
 $ v.clearCache();
@@ -268,7 +271,7 @@ $ // FIXME: I should test with a pending result (and figure out what it should d
 <h2>And now same-origin!</h2>
 
 <div class="test"><pre class="doctest">
-$ badReceipt = makeReceipt({iss: "http://example.com", verify: "http://evil.com/verifier", product: {url: "http://whatever.com"}});
+$ badReceipt = makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://evil.com/verifier", product: {url: "http://whatever.com"}});
 $ mockMozApps._clear();
 $ mockMozApps._installManifest(thisOrigin + '/manifest.webapp', {name: "my app"}, thisOrigin, {receipts: [badReceipt]}, pending);
 [object DOMRequest].onsuccess([object Event])

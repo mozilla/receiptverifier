@@ -36,6 +36,7 @@ var Verifier = function (options) {
   this.requestTimeout = options.requestTimeout || this.defaultRequestTimeout;
   this.refundWindow = options.refundWindow || this.defaultRefundWindow;
   this.installs_allowed_from = options.installs_allowed_from || undefined;
+  this.types_allowed = options.types_allowed || ['purchase-receipt', 'developer-receipt', 'reviewer-receipt'];
   this.onlog = options.onlog;
   if (options.logLevel) {
     if (typeof options.logLevel == "string") {
@@ -176,6 +177,7 @@ Verifier.errors.InvalidReceiptIssuer = Verifier.State("InvalidReceiptIssuer");
 Verifier.errors.ConnectionError = Verifier.State("ConnectionError", Verifier.states.NetworkError);
 Verifier.errors.ReceiptExpired = Verifier.State("ReceiptExpired");
 Verifier.errors.VerifyDomainMismatch = Verifier.State("VerifyDomainMismatch");
+Verifier.errors.WrongType = Verifier.State("WrongType");
 
 Verifier.errors.toString = Verifier.states.toString;
 
@@ -184,7 +186,7 @@ Verifier.prototype = {
   _validConstructorArguments: [
     'cacheStorage', 'cacheTimeout', 'requestTimeout',
     'refundWindow', 'installs_allowed_from', 'onlog',
-    'logLevel'
+    'logLevel', 'typsAllowed'
   ],
 
   defaultCacheTimeout: 1000 * 60 * 60 * 24, // One day
@@ -327,6 +329,12 @@ Verifier.prototype = {
       parsed = this.parseReceipt(receipt);
     } catch (e) {
       this._addReceiptError(receipt, new this.errors.ReceiptParseError("Error decoding JSON: " + e, {exception: e}));
+      callback();
+      return;
+    }
+    var typ = parsed.typ;
+    if (this.typsAllowed.indexOf(typ) < 0) {
+      this._addReceiptError(receipt, new this.errors.WrongType("Wrong receipt type: " + typ, {parsed: parsed}));
       callback();
       return;
     }
