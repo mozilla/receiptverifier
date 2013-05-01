@@ -114,7 +114,7 @@ The constructor takes several options:
 
 **logLevel**: this is the level of messages to send to the logger function.  E.g., `new mozmarket.receipts.Verifier({logLevel: "DEBUG", onlog: ...})`.  To see the levels, look at `mozmarket.receipts.Verifier.levels`
 
-**typsAllowed**: An array of the receipt types you'd like to accept. Defaults to accepting developer, reviewer and purchase receipts, but not test receipts. To accept test receipts only, `new mozmarket.receipts.Verifier({typsAllowed: ['test-receipt']...})`
+**typsAllowed**: An array of the [receipt types](https://wiki.mozilla.org/Apps/WebApplicationReceipt#the_typ_field) [you'd like to accept](https://developer.mozilla.org/en-US/docs/Apps/Publishing/Validating_a_receipt?redirectlocale=en-US&redirectslug=Apps%2FValidating_a_receipt#What_receipts_you_should_accept). Defaults to accepting developer, reviewer and purchase receipts, but not test receipts. To accept test receipts only, `new mozmarket.receipts.Verifier({typsAllowed: ['test-receipt']...})`
 
 ### Methods
 
