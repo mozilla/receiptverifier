@@ -144,7 +144,7 @@ mozmarket.receipts.verify(function (verifier) {
     // The verifier library itself got messed up; this shouldn't happen!
     // It's up to you if you want to reject the user at this point
     logToServer(verifier.app, verifier.error);
-  } else if {verifier.state instanceof verifier.states.OK) {
+  } else if (verifier.state instanceof verifier.states.OK) {
     // Everything is cool
   } else {
     // Some other error occurred; maybe it was never a valid receipt, maybe
