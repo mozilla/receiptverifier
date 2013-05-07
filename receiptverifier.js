@@ -36,7 +36,7 @@ var Verifier = function (options) {
   this.requestTimeout = options.requestTimeout || this.defaultRequestTimeout;
   this.refundWindow = options.refundWindow || this.defaultRefundWindow;
   this.installs_allowed_from = options.installs_allowed_from || undefined;
-  this.types_allowed = options.types_allowed || ['purchase-receipt', 'developer-receipt', 'reviewer-receipt'];
+  this.typsAllowed = options.typsAllowed || ['purchase-receipt', 'developer-receipt', 'reviewer-receipt'];
   this.onlog = options.onlog;
   if (options.logLevel) {
     if (typeof options.logLevel == "string") {
