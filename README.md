@@ -87,9 +87,10 @@ To see an example of how these options interact, look at [test-ui.html](test-ui.
 This library (besides `Prompter`) exposes a function `mozmarket.receipts.verify()`, which you use like:
 
 ```javascript
-mozmarket.receipts.verify(function (verifier) {
+var verifier = new mozmarket.receipts.Verifier({ optional options });
+verifier.verify(function (verifier) {
   // Look at verifier.state to see how it went
-}, {optional options});
+});
 ```
 
 The `verifier` is an instance of `mozmarket.receipts.Verifier`.  The callback will be called regardless of success or failure, including if the application wasn't installed, and even if there is an exception in the library itself.
