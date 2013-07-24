@@ -117,6 +117,11 @@ The constructor takes several options:
 
 **typsAllowed**: An array of the [receipt types](https://wiki.mozilla.org/Apps/WebApplicationReceipt#the_typ_field) [you'd like to accept](https://developer.mozilla.org/en-US/docs/Apps/Publishing/Validating_a_receipt?redirectlocale=en-US&redirectslug=Apps%2FValidating_a_receipt#What_receipts_you_should_accept). Defaults to accepting developer, reviewer and purchase receipts, but not test receipts. To accept test receipts only, `new mozmarket.receipts.Verifier({typsAllowed: ['test-receipt']...})`
 
+**productURL**: the url that is added to the product in the receipt. For hosted
+apps this is the manifest domain, for packaged apps this the origin specified
+in the manifest. This is optional, but recommended to ensure that the receipt
+issued is for your app.
+
 ### Methods
 
 The `mozmarket.receipts.verify()` function is mostly what you'll use. A couple methods you might want from the verifier object:

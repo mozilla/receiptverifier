@@ -37,6 +37,7 @@ var Verifier = function (options) {
   this.refundWindow = options.refundWindow || this.defaultRefundWindow;
   this.installs_allowed_from = options.installs_allowed_from || undefined;
   this.typsAllowed = options.typsAllowed || ['purchase-receipt', 'developer-receipt', 'reviewer-receipt'];
+  this.productURL = options.productURL || undefined;
   this.onlog = options.onlog;
   if (options.logLevel) {
     if (typeof options.logLevel == "string") {
@@ -178,6 +179,7 @@ Verifier.errors.ConnectionError = Verifier.State("ConnectionError", Verifier.sta
 Verifier.errors.ReceiptExpired = Verifier.State("ReceiptExpired");
 Verifier.errors.VerifyDomainMismatch = Verifier.State("VerifyDomainMismatch");
 Verifier.errors.WrongType = Verifier.State("WrongType");
+Verifier.errors.ProductURLError = Verifier.State("ProductURLError");
 
 Verifier.errors.toString = Verifier.states.toString;
 
@@ -186,7 +188,7 @@ Verifier.prototype = {
   _validConstructorArguments: [
     'cacheStorage', 'cacheTimeout', 'requestTimeout',
     'refundWindow', 'installs_allowed_from', 'onlog',
-    'logLevel', 'typsAllowed'
+    'logLevel', 'typsAllowed', 'productURL'
   ],
 
   defaultCacheTimeout: 1000 * 60 * 60 * 24, // One day
@@ -337,6 +339,21 @@ Verifier.prototype = {
       this._addReceiptError(receipt, new this.errors.WrongType("Wrong receipt type: " + typ, {parsed: parsed}));
       callback();
       return;
+    }
+    var url = null;
+    if (this.productURL) {
+        if (parsed.product && parsed.product.url) {
+            url = parsed.product.url;
+        } else {
+            this._addReceiptError(receipt, new this.errors.ProductURLError("Product URL missing.", {parsed: parsed}));
+            callback();
+            return;
+        }
+        if (this.productURL.indexOf(url) < 0) {
+            this._addReceiptError(receipt, new this.errors.ProductURLError("Product URL wrong: " + url, {parsed: parsed}));
+            callback();
+            return;
+        }
     }
     var iss = parsed.iss;
     if (! iss) {
