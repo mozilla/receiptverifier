@@ -97,8 +97,8 @@ $ writeln(r.result.receipts);
 [...]
 $ RESPONSE = {data: {status: "ok"}};
 $ owaArgs = {requestTimeout: 1000, logLevel: "INFO", onlog: Verifier.consoleLogger}
-$ function verify(noClear, waitTime) {
->   v = new Verifier(owaArgs);
+$ function verify(noClear, waitTime, args) {
+>   v = new Verifier(args || owaArgs);
 >   if (! noClear) {
 >     v.clearCache();
 >   }
@@ -136,8 +136,23 @@ verify([Verifier state: [NoValidReceipts ...] Error(...): [ReceiptFormatError No
 $ appData.installData.receipts = [makeReceipt({typ: "test-receipt"})];
 $ verify();
 verify([Verifier state: [NoValidReceipts ...] Error(...): [WrongType Wrong receipt type...]...])
-$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "http://whatever.com"}})];
+
+$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier"})];
+$ verify(true, undefined, {productURL: 'foo', logLevel: "INFO", onlog: Verifier.consoleLogger, requestTimeout: 1000});
+verify([Verifier state: [NoValidReceipts ...] Error(...): [ProductURLError Product URL missing...]...])
+
+$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier", product: {foo: "bar"}})];
+$ verify(true, undefined, {productURL: 'foo', logLevel: "INFO", onlog: Verifier.consoleLogger, requestTimeout: 1000});
+verify([Verifier state: [NoValidReceipts ...] Error(...): [ProductURLError Product URL missing...]...])
+
+$ appData.installData.receipts = [makeReceipt({typ: "purchase-receipt", iss: "http://example.com", verify: "http://example.com/verifier", product: {url: "bar"}})];
+$ verify(true, undefined, {productURL: 'foo', logLevel: "INFO", onlog: Verifier.consoleLogger, requestTimeout: 1000});
+verify([Verifier state: [NoValidReceipts ...] Error(...): [ProductURLError Product URL wrong: bar...]...])
+
 $ appData.manifest.installs_allowed_from = ['http://store.example.com'];
+$ verify(true, undefined, {productURL: 'bar', logLevel: "INFO", onlog: Verifier.consoleLogger, requestTimeout: 1000});
+verify([Verifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer ...]...])
+
 $ verify();
 verify([Verifier state: [NoValidReceipts ...] Error(...): [InvalidReceiptIssuer ...]...])
 $ appData.manifest.installs_allowed_from = ['http://store.example.com'];
