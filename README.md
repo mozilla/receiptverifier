@@ -8,7 +8,8 @@ If you use the library, please tell me and let me inform you of updates by [putt
 
 ## Table of Contents
 
-1. [Using the library the really quick way](https://github.com/mozilla/receiptverifier#using-the-library-the-really-quick-way)
+1. [Library contents](https://github.com/mozilla/receiptverifier#library-contents)
+  * [Using the library the really quick way](https://github.com/mozilla/receiptverifier#using-the-library-the-really-quick-way)
   * [Prompter templates](https://github.com/mozilla/receiptverifier#prompter-templates)
 2. [Using the library in the browser (Client Side)](https://github.com/mozilla/receiptverifier#using-the-library-in-the-browser-client-side)
   * [Options](https://github.com/mozilla/receiptverifier#options)
@@ -19,7 +20,18 @@ If you use the library, please tell me and let me inform you of updates by [putt
 5. [Testing the library](https://github.com/mozilla/receiptverifier#testing-the-library)
 6. [To Do](https://github.com/mozilla/receiptverifier#to-do)
 
-## Using the library the really quick way
+## Library contents
+
+The library contains two files, one that performs receipt checks and one that
+provides a sample user interface and templating option. To use the library the
+really quick way, include both `receiptverifier.js` and `receiptverifier-ui.js`.
+
+We'd recommend using the `receiptverifier-ui.js` as an example for testing, but writing
+a user interface that suits your app using your own UI libraries.
+
+### Using the library the really quick way
+
+This requires `receiptverifier.js` and `receiptverifier-ui.js`.
 
 Below you'll see a description of the verifier, and how you can get the status of receipts, and then do something about that status.  But if you want to be really quick about it, you can use this:
 
@@ -83,6 +95,8 @@ These are all the templates:
 To see an example of how these options interact, look at [test-ui.html](test-ui.html).
 
 ## Using the library in the browser (Client Side)
+
+This is the recommended use for most apps and just requires only `receiptverifier.js`.
 
 This library (besides `Prompter`) exposes a function `mozmarket.receipts.verify()`, which you use like:
 
