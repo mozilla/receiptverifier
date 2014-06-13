@@ -261,7 +261,7 @@ Verifier.prototype = {
   verifyReceipts: function (app, onVerified) {
     if ((! app.receipts) || (! app.receipts.length)) {
       if (app.receipts === undefined) {
-        this.log(self.levels.ERROR,
+        this.log(this.levels.ERROR,
           "The .receipts property of the app object is undefined (app: " +
           JSON.stringify(app) + ")");
       }
