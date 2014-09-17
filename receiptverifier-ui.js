@@ -85,7 +85,7 @@ var $ = (function(win, doc, undefined) {
 
 function Prompter(options) {
   var i;
-  if (! this instanceof Prompter) {
+  if (! (this instanceof Prompter)) {
     return new Prompter(options);
   }
   options = options || {};
