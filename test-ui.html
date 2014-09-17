@@ -28,7 +28,7 @@ function runTest(state, error, options) {
   if (error) {
     verifier.receiptErrors['test'] = error;
   }
-  var ui = new mozmarket.receipts.Prompter(options);
+  var ui = mozmarket.receipts.Prompter(options);
   ui.respond(verifier);
 }
 
